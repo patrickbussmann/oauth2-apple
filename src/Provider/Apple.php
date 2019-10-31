@@ -4,11 +4,9 @@ namespace League\OAuth2\Client\Provider;
 
 use Exception;
 use InvalidArgumentException;
-use Jose\Component\Core\AlgorithmManager;
-use Jose\Component\KeyManagement\JWKFactory;
-use Jose\Component\Signature\Algorithm\ES256;
-use Jose\Component\Signature\JWSBuilder;
-use Jose\Component\Signature\Serializer\CompactSerializer;
+use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Signer\Ecdsa\Sha256;
+use Lcobucci\JWT\Signer\Key;
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -51,6 +49,14 @@ class Apple extends AbstractProvider
      */
     public function __construct(array $options = [], array $collaborators = [])
     {
+        if (empty($options['teamId'])) {
+            throw new InvalidArgumentException('Required option not passed: "teamId"');
+        }
+
+        if (empty($options['keyFileId'])) {
+            throw new InvalidArgumentException('Required option not passed: "keyFileId"');
+        }
+
         if (empty($options['keyFilePath'])) {
             throw new InvalidArgumentException('Required option not passed: "keyFilePath"');
         }
@@ -64,7 +70,7 @@ class Apple extends AbstractProvider
      * The grant that was used to fetch the response can be used to provide
      * additional context.
      *
-     * @param  array $response
+     * @param  array         $response
      * @param  AbstractGrant $grant
      * @return AccessTokenInterface
      */
@@ -106,8 +112,8 @@ class Apple extends AbstractProvider
      */
     protected function fetchResourceOwnerDetails(AccessToken $token)
     {
-        return json_decode(array_key_exists('user', $_GET)
-            ? $_GET['user'] : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true);
+        return json_decode(array_key_exists('user', $_GET) ? $_GET['user']
+            : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true);
     }
 
     /**
@@ -160,7 +166,7 @@ class Apple extends AbstractProvider
      * Check a provider response for errors.
      *
      * @param  ResponseInterface $response
-     * @param  array $data Parsed response data
+     * @param  array             $data     Parsed response data
      * @return void
      * @throws AppleAccessDeniedException
      */
@@ -179,15 +185,22 @@ class Apple extends AbstractProvider
      * Generate a user object from a successful user details request.
      *
      * @param array $response
-     * @param Apple $token
+     * @param AccessToken $token
      * @return AppleResourceOwner
      */
     protected function createResourceOwner(array $response, AccessToken $token)
     {
-        return new AppleResourceOwner(array_merge($response, [
-            'email' => isset($token->getValues()['email'])
-                ? $token->getValues()['email'] : (isset($response['email']) ? $response['email'] : null)
-        ]), $token->getResourceOwnerId());
+        return new AppleResourceOwner(
+            array_merge(
+                $response,
+                [
+                    'email' => isset($token->getValues()['email'])
+                        ? $token->getValues()['email'] : (isset($response['email']) ? $response['email'] : null),
+                    'isPrivateEmail' => $token instanceof AppleAccessToken ? $token->isPrivateEmail() : null
+                ]
+            ),
+            $token->getResourceOwnerId()
+        );
     }
 
     /**
@@ -195,38 +208,32 @@ class Apple extends AbstractProvider
      */
     public function getAccessToken($grant, array $options = [])
     {
-        $algorithmManager = new AlgorithmManager([new ES256()]);
-        $jwsBuilder = new JWSBuilder($algorithmManager);
-        $jws = $jwsBuilder
-            ->create()
-            ->withPayload(json_encode([
-                'iat' => time(),
-                'exp' => time() + 600,
-                'iss' => $this->teamId,
-                'aud' => 'https://appleid.apple.com',
-                'sub' => $this->clientId
-            ]))
-            ->addSignature($this->getLocalKey(), [
-                'alg' => 'ES256',
-                'kid' => $this->keyFileId
-            ])
-            ->build();
+        $signer = new Sha256();
+        $time = time();
 
-        $serializer = new CompactSerializer();
-        $token = $serializer->serialize($jws);
+        $token = (new Builder())
+            ->issuedBy($this->teamId)
+            ->permittedFor('https://appleid.apple.com')
+            ->issuedAt($time)
+            ->expiresAt($time + 600)
+            ->relatedTo($this->clientId)
+            ->withClaim('sub', $this->clientId)
+            ->withHeader('alg', 'ES256')
+            ->withHeader('kid', $this->keyFileId)
+            ->getToken($signer, $this->getLocalKey());
 
         $options += [
-            'client_secret' => $token
+            'client_secret' => (string) $token
         ];
 
         return parent::getAccessToken($grant, $options);
     }
 
     /**
-     * @return \Jose\Component\Core\JWK
+     * @return Key
      */
     public function getLocalKey()
     {
-        return JWKFactory::createFromKeyFile($this->keyFilePath);
+        return new Key('file://' . $this->keyFilePath);
     }
 }

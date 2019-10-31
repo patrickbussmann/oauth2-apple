@@ -8,7 +8,6 @@ use League\OAuth2\Client\Tool\ArrayAccessorTrait;
  */
 class AppleResourceOwner extends GenericResourceOwner
 {
-
     use ArrayAccessorTrait;
 
     /**
@@ -24,7 +23,14 @@ class AppleResourceOwner extends GenericResourceOwner
     private $email;
 
     /**
+     * @var boolean true when its private relay from apple else the user mail address
+     */
+    private $isPrivateEmail;
+
+    /**
      * Gets resource owner attribute by key. The key supports dot notation.
+     *
+     * @param string $key
      *
      * @return mixed
      */
@@ -71,6 +77,14 @@ class AppleResourceOwner extends GenericResourceOwner
     public function getEmail()
     {
         return $this->getAttribute('email');
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPrivateEmail()
+    {
+        return (bool) $this->getAttribute('isPrivateEmail');
     }
 
     /**
