@@ -174,8 +174,8 @@ class Apple extends AbstractProvider
     {
         if ($response->getStatusCode() >= 400) {
             throw new AppleAccessDeniedException(
-                $data['error'] ?: $response->getReasonPhrase(),
-                $data['code'] ?: $response->getStatusCode(),
+                isset($data['error']) ? $data['error'] : $response->getReasonPhrase(),
+                isset($data['code']) ? $data['code'] : $response->getStatusCode(),
                 $response
             );
         }
