@@ -26,9 +26,11 @@ class AppleAccessToken extends AccessToken
     /**
      * Constructs an access token.
      *
-     * @param  array $options An array of options returned by the service provider
+     * @param array $options An array of options returned by the service provider
      *     in the access token request. The `access_token` option is required.
      * @throws InvalidArgumentException if `access_token` is not provided in `$options`.
+     *
+     * @throws \Exception
      */
     public function __construct(array $options = [])
     {
@@ -36,7 +38,22 @@ class AppleAccessToken extends AccessToken
             throw new InvalidArgumentException('Required option not passed: "id_token"');
         }
 
-        $decoded = JWT::decode($options['id_token'], $this->getAppleKey(), ['RS256']);
+        $decoded = null;
+        $keys = $this->getAppleKey();
+        $last = end($keys);
+        foreach ($keys as $key) {
+            try {
+                $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                break;
+            } catch (\Exception $exception) {
+                if ($last === $key) {
+                    throw $exception;
+                }
+            }
+        }
+        if (null === $decoded) {
+            throw new \Exception('Got no data within "id_token"!');
+        }
         $payload = json_decode(json_encode($decoded), true);
 
         $options['resource_owner_id'] = $payload['sub'];
@@ -65,7 +82,7 @@ class AppleAccessToken extends AccessToken
      */
     protected function getAppleKey()
     {
-        return JWK::parseKeySet(file_get_contents('https://appleid.apple.com/auth/keys'))['AIDOPK1'];
+        return JWK::parseKeySet(file_get_contents('https://appleid.apple.com/auth/keys'));
     }
 
     /**
