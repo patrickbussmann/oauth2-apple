@@ -21,7 +21,7 @@
     "require": {
         "league/oauth2-client": "^2.0",
         "ext-json": "*",
-        "firebase/php-jwt": "^5.0",
+        "firebase/php-jwt": "^5.2",
         "lcobucci/jwt": "^3.3"
     },
     "require-dev": {
