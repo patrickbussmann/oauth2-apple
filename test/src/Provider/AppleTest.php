@@ -171,7 +171,7 @@ class AppleTest extends \PHPUnit_Framework_TestCase
 	    ]);
     }
 
-	public function testFechtingOwnerDetails()
+	public function testFetchingOwnerDetails()
 	{
 		$class = new \ReflectionClass($this->provider);
 		$method = $class->getMethod('fetchResourceOwnerDetails');
@@ -184,6 +184,21 @@ class AppleTest extends \PHPUnit_Framework_TestCase
 		$data = $method->invokeArgs($this->provider, [new AccessToken(['access_token' => 'hello'])]);
 
 		$this->assertEquals($arr, $data);
+	}
+
+    /**
+     * @see https://github.com/patrickbussmann/oauth2-apple/issues/12
+     */
+	public function testFetchingOwnerDetailsIssue12()
+	{
+		$class = new \ReflectionClass($this->provider);
+		$method = $class->getMethod('fetchResourceOwnerDetails');
+		$method->setAccessible(true);
+
+        $_POST['user'] = '';
+		$data = $method->invokeArgs($this->provider, [new AccessToken(['access_token' => 'hello'])]);
+
+		$this->assertEquals([], $data);
 	}
 
 	/**

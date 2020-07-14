@@ -113,7 +113,7 @@ class Apple extends AbstractProvider
     protected function fetchResourceOwnerDetails(AccessToken $token)
     {
         return json_decode(array_key_exists('user', $_GET) ? $_GET['user']
-            : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true);
+            : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true) ?: [];
     }
 
     /**
