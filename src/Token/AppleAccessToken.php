@@ -34,36 +34,38 @@ class AppleAccessToken extends AccessToken
      */
     public function __construct(array $options = [])
     {
-        if (empty($options['id_token'])) {
-            throw new InvalidArgumentException('Required option not passed: "id_token"');
-        }
+        if (array_key_exists('refresh_token', $options)) {
+            if (empty($options['id_token'])) {
+                throw new InvalidArgumentException('Required option not passed: "id_token"');
+            }
 
-        $decoded = null;
-        $keys = $this->getAppleKey();
-        $last = end($keys);
-        foreach ($keys as $key) {
-            try {
-                $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
-                break;
-            } catch (\Exception $exception) {
-                if ($last === $key) {
-                    throw $exception;
+            $decoded = null;
+            $keys = $this->getAppleKey();
+            $last = end($keys);
+            foreach ($keys as $key) {
+                try {
+                    $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                    break;
+                } catch (\Exception $exception) {
+                    if ($last === $key) {
+                        throw $exception;
+                    }
                 }
             }
-        }
-        if (null === $decoded) {
-            throw new \Exception('Got no data within "id_token"!');
-        }
-        $payload = json_decode(json_encode($decoded), true);
+            if (null === $decoded) {
+                throw new \Exception('Got no data within "id_token"!');
+            }
+            $payload = json_decode(json_encode($decoded), true);
 
-        $options['resource_owner_id'] = $payload['sub'];
+            $options['resource_owner_id'] = $payload['sub'];
 
-        if (isset($payload['email_verified']) && $payload['email_verified']) {
-            $options['email'] = $payload['email'];
-        }
+            if (isset($payload['email_verified']) && $payload['email_verified']) {
+                $options['email'] = $payload['email'];
+            }
 
-        if (isset($payload['is_private_email'])) {
-            $this->isPrivateEmail = $payload['is_private_email'];
+            if (isset($payload['is_private_email'])) {
+                $this->isPrivateEmail = $payload['is_private_email'];
+            }
         }
 
         parent::__construct($options);
