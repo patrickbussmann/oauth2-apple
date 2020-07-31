@@ -88,7 +88,7 @@ class AppleAccessToken extends AccessToken
         $request = $client->get('https://appleid.apple.com/auth/keys');
         $response = $request->getBody();
 
-        if($response){
+        if ($response) {
             return JWK::parseKeySet(json_decode($response, true));
         }
         return false;
