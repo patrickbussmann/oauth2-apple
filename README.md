@@ -107,6 +107,7 @@ At the time of authoring this documentation, the following scopes are available.
 Please note that you will get this informations only at the first log in of the user!
 In the following log ins you'll get only the user id!
 
+If you only want to get the user id, you can set the `scope` as ` `, then change all the `$_POST` to `$_GET`.
 
 ### Refresh Tokens
 
