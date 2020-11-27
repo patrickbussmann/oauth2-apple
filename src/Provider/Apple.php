@@ -76,7 +76,7 @@ class Apple extends AbstractProvider
      */
     protected function createAccessToken(array $response, AbstractGrant $grant)
     {
-        return new AppleAccessToken($response);
+        return new AppleAccessToken($response, $this->getHttpClient());
     }
 
     /**
