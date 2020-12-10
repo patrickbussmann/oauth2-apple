@@ -34,6 +34,10 @@ class AppleAccessToken extends AccessToken
      */
     public function __construct(array $options = [])
     {
+        // Take into account slight timing differences between servers
+        // http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html#nbfDef
+        JWT::$leeway = 60;
+
         if (array_key_exists('refresh_token', $options)) {
             if (empty($options['id_token'])) {
                 throw new InvalidArgumentException('Required option not passed: "id_token"');
