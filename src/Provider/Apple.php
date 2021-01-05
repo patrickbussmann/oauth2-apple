@@ -76,7 +76,7 @@ class Apple extends AbstractProvider
      */
     protected function createAccessToken(array $response, AbstractGrant $grant)
     {
-        return new AppleAccessToken($response, $this->getHttpClient());
+        return new AppleAccessToken($this->getHttpClient(), $response);
     }
 
     /**
@@ -210,12 +210,13 @@ class Apple extends AbstractProvider
     {
         $signer = new Sha256();
         $time = new \DateTimeImmutable();
+        $expiresAt = $time->modify('+1 Hour');
 
         $token = (new Builder())
             ->issuedBy($this->teamId)
             ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($time)
-            ->expiresAt((clone $time)->modify('+1 Hour'))
+            ->issuedAt($time->getTimestamp())
+            ->expiresAt($expiresAt->getTimestamp())
             ->relatedTo($this->clientId)
             ->withHeader('alg', 'ES256')
             ->withHeader('kid', $this->keyFileId)

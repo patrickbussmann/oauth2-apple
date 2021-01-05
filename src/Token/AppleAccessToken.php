@@ -32,13 +32,14 @@ class AppleAccessToken extends AccessToken
     /**
      * Constructs an access token.
      *
+     * @param ClientInterface $httpClient the http client to use
      * @param array $options An array of options returned by the service provider
      *     in the access token request. The `access_token` option is required.
      * @throws InvalidArgumentException if `access_token` is not provided in `$options`.
      *
      * @throws \Exception
      */
-    public function __construct(array $options = [], $httpClient)
+    public function __construct($httpClient, array $options = [])
     {
         $this->httpClient = $httpClient;
 

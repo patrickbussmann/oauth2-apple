@@ -35,13 +35,13 @@ class AppleAccessTokenTest extends TestCase
             ->once()
             ->andReturn(['examplekey']);
 
-        $accessToken = new AppleAccessToken([
+        $accessToken = new AppleAccessToken($this->getClient(1), [
             'access_token' => 'access_token',
             'token_type' => 'Bearer',
             'expires_in' => 3600,
             'refresh_token' => 'abc.0.def',
             'id_token' => 'something'
-        ], $this->getClient(1));
+        ]);
         $this->assertEquals('something', $accessToken->getIdToken());
         $this->assertEquals('123.abc.123', $accessToken->getResourceOwnerId());
         $this->assertEquals('access_token', $accessToken->getToken());
@@ -49,11 +49,11 @@ class AppleAccessTokenTest extends TestCase
 
     public function testCreatingRefreshToken()
     {
-        $refreshToken = new AppleAccessToken([
+        $refreshToken = new AppleAccessToken($this->getClient(0), [
             'access_token' => 'access_token',
             'token_type' => 'Bearer',
             'expires_in' => 3600
-        ], $this->getClient(0));
+        ]);
         $this->assertEquals('access_token', $refreshToken->getToken());
     }
 
