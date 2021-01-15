@@ -46,7 +46,11 @@ class AppleResourceOwner extends GenericResourceOwner
      */
     public function getFirstName()
     {
-        return $this->getAttribute('name')['firstName'];
+        $name = $this->getAttribute('name');
+        if (isset($name)) {
+            return $name['firstName'];
+        }
+        return null;
     }
 
     /**
@@ -66,7 +70,11 @@ class AppleResourceOwner extends GenericResourceOwner
      */
     public function getLastName()
     {
-        return $this->getAttribute('name')['lastName'];
+        $name = $this->getAttribute('name');
+        if (isset($name)) {
+            return $name['lastName'];
+        }
+        return null;
     }
 
     /**

@@ -18,6 +18,16 @@ All Notable changes to `oauth2-apple` will be documented in this file
 ### Security
 - Nothing
 
+## 0.2.3 - 2021-01-05
+
+### Added
+- Using guzzle http instead of file_get_contents [#14](https://github.com/patrickbussmann/oauth2-apple/pull/14)/[#17](https://github.com/patrickbussmann/oauth2-apple/pull/17) (thanks to [jmalinens](https://github.com/jmalinens) and [williamxsp](https://github.com/williamxsp))
+- README no scope instruction [#15](https://github.com/patrickbussmann/oauth2-apple/pull/15) (thanks to [NgSekLong](https://github.com/NgSekLong))
+- README leeway usage [#18](https://github.com/patrickbussmann/oauth2-apple/issues/18) (thanks to [lukequinnell](https://github.com/lukequinnell))
+
+### Fixed
+- Fixed getting first and last name issues [#13](https://github.com/patrickbussmann/oauth2-apple/pull/13) (thanks to [bogdandovgopol](https://github.com/bogdandovgopol))
+
 ## 0.2.1 - 2020-02-13
 
 ### Added

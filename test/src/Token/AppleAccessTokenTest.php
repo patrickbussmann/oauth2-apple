@@ -2,6 +2,8 @@
 
 namespace League\OAuth2\Client\Test\Token;
 
+use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Psr7\Response;
 use League\OAuth2\Client\Token\AppleAccessToken;
 use PHPUnit\Framework\TestCase;
 use Mockery as m;
@@ -33,7 +35,7 @@ class AppleAccessTokenTest extends TestCase
             ->once()
             ->andReturn(['examplekey']);
 
-        $accessToken = new AppleAccessToken([
+        $accessToken = new AppleAccessToken($this->getClient(1), [
             'access_token' => 'access_token',
             'token_type' => 'Bearer',
             'expires_in' => 3600,
@@ -47,11 +49,25 @@ class AppleAccessTokenTest extends TestCase
 
     public function testCreatingRefreshToken()
     {
-        $refreshToken = new AppleAccessToken([
+        $refreshToken = new AppleAccessToken($this->getClient(0), [
             'access_token' => 'access_token',
             'token_type' => 'Bearer',
             'expires_in' => 3600
         ]);
         $this->assertEquals('access_token', $refreshToken->getToken());
+    }
+
+    private function getClient($times)
+    {
+        $client = m::mock('GuzzleHttp\ClientInterface');
+        if ($times > 0) {
+            $client->shouldReceive('request')
+                ->times($times)
+                ->withArgs(['GET', 'https://appleid.apple.com/auth/keys'])
+                ->andReturn(new Response())
+            ;
+        }
+
+        return $client;
     }
 }

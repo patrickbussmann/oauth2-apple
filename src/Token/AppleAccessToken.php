@@ -4,6 +4,7 @@ namespace League\OAuth2\Client\Token;
 
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
+use GuzzleHttp\ClientInterface;
 use InvalidArgumentException;
 
 class AppleAccessToken extends AccessToken
@@ -24,16 +25,24 @@ class AppleAccessToken extends AccessToken
     protected $isPrivateEmail;
 
     /**
+     * @var ClientInterface
+     */
+    protected $httpClient;
+
+    /**
      * Constructs an access token.
      *
+     * @param ClientInterface $httpClient the http client to use
      * @param array $options An array of options returned by the service provider
      *     in the access token request. The `access_token` option is required.
      * @throws InvalidArgumentException if `access_token` is not provided in `$options`.
      *
      * @throws \Exception
      */
-    public function __construct(array $options = [])
+    public function __construct($httpClient, array $options = [])
     {
+        $this->httpClient = $httpClient;
+
         if (array_key_exists('refresh_token', $options)) {
             if (empty($options['id_token'])) {
                 throw new InvalidArgumentException('Required option not passed: "id_token"');
@@ -84,7 +93,13 @@ class AppleAccessToken extends AccessToken
      */
     protected function getAppleKey()
     {
-        return JWK::parseKeySet(json_decode(file_get_contents('https://appleid.apple.com/auth/keys'), true));
+        $response = $this->httpClient->request('GET', 'https://appleid.apple.com/auth/keys');
+
+        if ($response) {
+            return JWK::parseKeySet(json_decode($response->getBody()->getContents(), true));
+        }
+
+        return false;
     }
 
     /**

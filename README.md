@@ -32,11 +32,14 @@ Usage is the same as The League's OAuth client, using `\League\OAuth2\Client\Pro
 ### Authorization Code Flow
 
 ```php
+// $leeway is needed for clock skew
+Firebase\JWT\JWT::$leeway = 60;
+
 $provider = new League\OAuth2\Client\Provider\Apple([
     'clientId'          => '{apple-client-id}',
     'teamId'            => '{apple-team-id}', // 1A234BFK46 https://developer.apple.com/account/#/membership/ (Team ID)
     'keyFileId'         => '{apple-key-file-id}', // 1ABC6523AA https://developer.apple.com/account/resources/authkeys/list (Key ID)
-    'keyFilePath'       => '{apple-key-file-path}', // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above 
+    'keyFilePath'       => '{apple-key-file-path}', // __DIR__ . '/AuthKey_1ABC6523AA.p8' -> Download key above
     'redirectUri'       => 'https://example.com/callback-url',
 ]);
 
@@ -107,6 +110,7 @@ At the time of authoring this documentation, the following scopes are available.
 Please note that you will get this informations only at the first log in of the user!
 In the following log ins you'll get only the user id!
 
+If you only want to get the user id, you can set the `scope` as ` `, then change all the `$_POST` to `$_GET`.
 
 ### Refresh Tokens
 
@@ -132,7 +136,7 @@ Please see [CONTRIBUTING](https://github.com/patrickbussmann/oauth2-apple/blob/m
 
 - [All Contributors](https://github.com/patrickbussmann/oauth2-apple/contributors)
 
-Template for this repository was the [LinkedIn](https://github.com/thephpleague/oauth2-linkedin). 
+Template for this repository was the [LinkedIn](https://github.com/thephpleague/oauth2-linkedin).
 
 ## License
 

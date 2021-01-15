@@ -3,6 +3,7 @@
 namespace League\OAuth2\Client\Test\Provider;
 
 use Exception;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Psr7\Response;
 use InvalidArgumentException;
 use Lcobucci\JWT\Builder;
@@ -12,9 +13,10 @@ use League\OAuth2\Client\Provider\AppleResourceOwner;
 use League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\QueryBuilderTrait;
+use PHPUnit\Framework\TestCase;
 use Mockery as m;
 
-class AppleTest extends \PHPUnit_Framework_TestCase
+class AppleTest extends TestCase
 {
     use QueryBuilderTrait;
 
@@ -142,19 +144,23 @@ class AppleTest extends \PHPUnit_Framework_TestCase
 	    ]);
         $provider = m::mock($provider);
 
-	    $time = time();
+	    $time = new \DateTimeImmutable();
+        $expiresAt = $time->modify('+1 Hour');
 	    $token = (new Builder())
 		    ->issuedBy('test-team-id')
 		    ->permittedFor('https://appleid.apple.com')
-		    ->issuedAt($time)
-		    ->expiresAt($time + 600)
+            ->issuedAt($time->getTimestamp())
+            ->expiresAt($expiresAt->getTimestamp())
 		    ->relatedTo('test-client')
 		    ->withClaim('sub', 'test')
 		    ->withHeader('alg', 'RS256')
 		    ->withHeader('kid', 'test')
 		    ->getToken();
 
-	    $client = m::mock('GuzzleHttp\ClientInterface');
+	    $client = m::mock(ClientInterface::class);
+	    $client->shouldReceive('request')
+		    ->times(1)
+		    ->andReturn(new Response(200, [], file_get_contents('https://appleid.apple.com/auth/keys')));
 	    $client->shouldReceive('send')
 		    ->times(1)
 		    ->andReturn(new Response(200, [], json_encode([
@@ -209,10 +215,11 @@ class AppleTest extends \PHPUnit_Framework_TestCase
 		$this->provider->getResourceOwnerDetailsUrl(new AccessToken(['access_token' => 'hello']));
 	}
 
+    /**
+     * @expectedException \League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException
+     */
 	public function testCheckResponse()
 	{
-		$this->setExpectedException(AppleAccessDeniedException::class, 'invalid_client', 400);
-
 		$class = new \ReflectionClass($this->provider);
 		$method = $class->getMethod('checkResponse');
 		$method->setAccessible(true);
