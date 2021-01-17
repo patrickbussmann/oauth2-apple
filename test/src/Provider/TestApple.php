@@ -2,6 +2,7 @@
 
 namespace League\OAuth2\Client\Test\Provider;
 
+use Lcobucci\JWT\Configuration;
 use League\OAuth2\Client\Provider\Apple;
 
 /**
@@ -12,7 +13,15 @@ use League\OAuth2\Client\Provider\Apple;
 class TestApple extends Apple
 {
     /**
-     * @return \Lcobucci\JWT\Signer\Key|null
+     * {@inheritDoc}
+     */
+    public function getConfiguration()
+    {
+        return Configuration::forUnsecuredSigner();
+    }
+
+    /**
+     * {@inheritDoc}
      */
     public function getLocalKey()
     {

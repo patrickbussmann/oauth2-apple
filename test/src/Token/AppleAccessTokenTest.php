@@ -2,7 +2,6 @@
 
 namespace League\OAuth2\Client\Test\Token;
 
-use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Psr7\Response;
 use League\OAuth2\Client\Token\AppleAccessToken;
 use PHPUnit\Framework\TestCase;
@@ -10,12 +9,6 @@ use Mockery as m;
 
 class AppleAccessTokenTest extends TestCase
 {
-    public function tearDown()
-    {
-        m::close();
-        parent::tearDown();
-    }
-
     /**
      * @runInSeparateProcess
      * @preserveGlobalState disabled

@@ -2,15 +2,11 @@
 
 namespace League\OAuth2\Client\Test\Provider;
 
-use Exception;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Psr7\Response;
-use InvalidArgumentException;
-use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Configuration;
 use League\OAuth2\Client\Provider\Apple;
-use League\OAuth2\Client\Test\Provider\TestApple;
 use League\OAuth2\Client\Provider\AppleResourceOwner;
-use League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\QueryBuilderTrait;
 use PHPUnit\Framework\TestCase;
@@ -20,12 +16,12 @@ class AppleTest extends TestCase
 {
     use QueryBuilderTrait;
 
-	/** @var Apple|\Mockery\MockInterface */
-    protected $provider;
-
-    protected function setUp()
+    /**
+     * @return Apple
+     */
+    private function getProvider()
     {
-        $this->provider = new \League\OAuth2\Client\Provider\Apple([
+        return new Apple([
             'clientId' => 'mock.example',
             'teamId' => 'mock.team.id',
             'keyFileId' => 'mock.file.id',
@@ -34,62 +30,49 @@ class AppleTest extends TestCase
         ]);
     }
 
-    public function tearDown()
+    public function testMissingTeamIdDuringInstantiationThrowsException()
     {
-        m::close();
-        parent::tearDown();
+        $this->expectException('InvalidArgumentException');
+        new Apple([
+            'clientId' => 'mock.example',
+            'keyFileId' => 'mock.file.id',
+            'keyFilePath' => __DIR__ . '/p256-private-key.p8',
+            'redirectUri' => 'none'
+        ]);
     }
 
-	/**
-	 * @expectedException InvalidArgumentException
-	 */
-	public function testMissingTeamIdDuringInstantiationThrowsException()
-	{
-		new \League\OAuth2\Client\Provider\Apple([
-			'clientId' => 'mock.example',
-			'keyFileId' => 'mock.file.id',
-			'keyFilePath' => __DIR__ . '/p256-private-key.p8',
-			'redirectUri' => 'none'
-		]);
-	}
+    public function testMissingKeyFileIdDuringInstantiationThrowsException()
+    {
+        $this->expectException('InvalidArgumentException');
+        new Apple([
+            'clientId' => 'mock.example',
+            'teamId' => 'mock.team.id',
+            'keyFilePath' => __DIR__ . '/p256-private-key.p8',
+            'redirectUri' => 'none'
+        ]);
+    }
 
-	/**
-	 * @expectedException InvalidArgumentException
-	 */
-	public function testMissingKeyFileIdDuringInstantiationThrowsException()
-	{
-		new \League\OAuth2\Client\Provider\Apple([
-			'clientId' => 'mock.example',
-			'teamId' => 'mock.team.id',
-			'keyFilePath' => __DIR__ . '/p256-private-key.p8',
-			'redirectUri' => 'none'
-		]);
-	}
+    public function testMissingKeyFilePathDuringInstantiationThrowsException()
+    {
+        $this->expectException('InvalidArgumentException');
+        new Apple([
+            'clientId' => 'mock.example',
+            'teamId' => 'mock.team.id',
+            'keyFileId' => 'mock.file.id',
+            'redirectUri' => 'none'
+        ]);
+    }
 
-	/**
-	 * @expectedException InvalidArgumentException
-	 */
-	public function testMissingKeyFilePathDuringInstantiationThrowsException()
-	{
-		new \League\OAuth2\Client\Provider\Apple([
-			'clientId' => 'mock.example',
-			'teamId' => 'mock.team.id',
-			'keyFileId' => 'mock.file.id',
-			'redirectUri' => 'none'
-		]);
-	}
-
-	/**
-	 * @expectedException InvalidArgumentException
-	 */
-	public function testMissingKeyDuringInstantiationThrowsException()
-	{
-		$this->provider->getLocalKey();
-	}
+    public function testMissingKeyDuringInstantiationThrowsException()
+    {
+        $this->expectException('InvalidArgumentException');
+        $this->getProvider()->getLocalKey();
+    }
 
     public function testAuthorizationUrl()
     {
-        $url = $this->provider->getAuthorizationUrl();
+        $provider = $this->getProvider();
+        $url = $provider->getAuthorizationUrl();
         $uri = parse_url($url);
         parse_str($uri['query'], $query);
 
@@ -99,22 +82,24 @@ class AppleTest extends TestCase
         $this->assertArrayHasKey('scope', $query);
         $this->assertArrayHasKey('response_type', $query);
         $this->assertArrayHasKey('response_mode', $query);
-        $this->assertNotNull($this->provider->getState());
+        $this->assertNotNull($provider->getState());
     }
 
     public function testScopes()
     {
+        $provider = $this->getProvider();
         $scopeSeparator = ' ';
         $options = ['scope' => [uniqid(), uniqid()]];
         $query = ['scope' => implode($scopeSeparator, $options['scope'])];
-        $url = $this->provider->getAuthorizationUrl($options);
+        $url = $provider->getAuthorizationUrl($options);
         $encodedScope = $this->buildQueryString($query);
-        $this->assertContains($encodedScope, $url);
+        $this->assertNotFalse(strpos($url, $encodedScope));
     }
 
     public function testGetAuthorizationUrl()
     {
-        $url = $this->provider->getAuthorizationUrl();
+        $provider = $this->getProvider();
+        $url = $provider->getAuthorizationUrl();
         $uri = parse_url($url);
 
         $this->assertEquals('/auth/authorize', $uri['path']);
@@ -122,140 +107,142 @@ class AppleTest extends TestCase
 
     public function testGetBaseAccessTokenUrl()
     {
+        $provider = $this->getProvider();
         $params = [];
 
-        $url = $this->provider->getBaseAccessTokenUrl($params);
+        $url = $provider->getBaseAccessTokenUrl($params);
         $uri = parse_url($url);
 
         $this->assertEquals('/auth/token', $uri['path']);
     }
 
-	/**
-	 * @expectedException \Firebase\JWT\SignatureInvalidException
-	 */
     public function testGetAccessToken()
     {
-	    $provider = new TestApple([
-		    'clientId' => 'mock.example',
-		    'teamId' => 'mock.team.id',
-		    'keyFileId' => 'mock.file.id',
-		    'keyFilePath' => __DIR__ . '/../../resources/p256-private-key.p8',
-		    'redirectUri' => 'none'
-	    ]);
+        $this->expectException('UnexpectedValueException');
+        $provider = new TestApple([
+            'clientId' => 'mock.example',
+            'teamId' => 'mock.team.id',
+            'keyFileId' => 'mock.file.id',
+            'keyFilePath' => __DIR__ . '/../../resources/p256-private-key.p8',
+            'redirectUri' => 'none'
+        ]);
         $provider = m::mock($provider);
 
-	    $time = new \DateTimeImmutable();
+
+        $configuration = Configuration::forUnsecuredSigner();
+
+        $time = new \DateTimeImmutable();
         $expiresAt = $time->modify('+1 Hour');
-	    $token = (new Builder())
-		    ->issuedBy('test-team-id')
-		    ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($time->getTimestamp())
-            ->expiresAt($expiresAt->getTimestamp())
-		    ->relatedTo('test-client')
-		    ->withClaim('sub', 'test')
-		    ->withHeader('alg', 'RS256')
-		    ->withHeader('kid', 'test')
-		    ->getToken();
+        $token = $configuration->builder()
+            ->issuedBy('test-team-id')
+            ->permittedFor('https://appleid.apple.com')
+            ->issuedAt($time)
+            ->expiresAt($expiresAt)
+            ->relatedTo('test-client')
+            ->withHeader('alg', 'RS256')
+            ->withHeader('kid', 'test')
+            ->getToken($configuration->signer(), $configuration->signingKey());
 
-	    $client = m::mock(ClientInterface::class);
-	    $client->shouldReceive('request')
-		    ->times(1)
-		    ->andReturn(new Response(200, [], file_get_contents('https://appleid.apple.com/auth/keys')));
-	    $client->shouldReceive('send')
-		    ->times(1)
-		    ->andReturn(new Response(200, [], json_encode([
-			    'access_token' => 'aad897dee58fe4f66bf220c181adaf82b.0.mrwxq.hmiE0djj1vJqoNisKmF-pA',
-			    'token_type' => 'Bearer',
-			    'expires_in' => 3600,
-			    'refresh_token' => 'r4a6e8b9c50104b78bc86b0d2649353fa.0.mrwxq.54joUj40j0cpuMANRtRjfg',
-			    'id_token' => (string) $token
-		    ])));
-	    $provider->setHttpClient($client);
+        $client = m::mock(ClientInterface::class);
+        $client->shouldReceive('request')
+            ->times(1)
+            ->andReturn(new Response(200, [], file_get_contents('https://appleid.apple.com/auth/keys')));
+        $client->shouldReceive('send')
+            ->times(1)
+            ->andReturn(new Response(200, [], json_encode([
+                'access_token' => 'aad897dee58fe4f66bf220c181adaf82b.0.mrwxq.hmiE0djj1vJqoNisKmF-pA',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+                'refresh_token' => 'r4a6e8b9c50104b78bc86b0d2649353fa.0.mrwxq.54joUj40j0cpuMANRtRjfg',
+                'id_token' => $token->toString()
+            ])));
+        $provider->setHttpClient($client);
 
-	    $provider->getAccessToken('authorization_code', [
-    		'code' => 'hello-world'
-	    ]);
+        $provider->getAccessToken('authorization_code', [
+            'code' => 'hello-world'
+        ]);
     }
 
-	public function testFetchingOwnerDetails()
-	{
-		$class = new \ReflectionClass($this->provider);
-		$method = $class->getMethod('fetchResourceOwnerDetails');
-		$method->setAccessible(true);
+    public function testFetchingOwnerDetails()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('fetchResourceOwnerDetails');
+        $method->setAccessible(true);
 
-		$arr = [
-			'name' => 'John Doe'
-		];
-		$_POST['user'] = json_encode($arr);
-		$data = $method->invokeArgs($this->provider, [new AccessToken(['access_token' => 'hello'])]);
+        $arr = [
+            'name' => 'John Doe'
+        ];
+        $_POST['user'] = json_encode($arr);
+        $data = $method->invokeArgs($provider, [new AccessToken(['access_token' => 'hello'])]);
 
-		$this->assertEquals($arr, $data);
-	}
+        $this->assertEquals($arr, $data);
+    }
 
     /**
      * @see https://github.com/patrickbussmann/oauth2-apple/issues/12
      */
-	public function testFetchingOwnerDetailsIssue12()
-	{
-		$class = new \ReflectionClass($this->provider);
-		$method = $class->getMethod('fetchResourceOwnerDetails');
-		$method->setAccessible(true);
+    public function testFetchingOwnerDetailsIssue12()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('fetchResourceOwnerDetails');
+        $method->setAccessible(true);
 
         $_POST['user'] = '';
-		$data = $method->invokeArgs($this->provider, [new AccessToken(['access_token' => 'hello'])]);
+        $data = $method->invokeArgs($provider, [new AccessToken(['access_token' => 'hello'])]);
 
-		$this->assertEquals([], $data);
-	}
+        $this->assertEquals([], $data);
+    }
 
-	/**
-	 * @expectedException Exception
-	 */
-	public function testNotImplementedGetResourceOwnerDetailsUrl()
-	{
-		$this->provider->getResourceOwnerDetailsUrl(new AccessToken(['access_token' => 'hello']));
-	}
+    public function testNotImplementedGetResourceOwnerDetailsUrl()
+    {
+        $this->expectException('Exception');
+        $provider = $this->getProvider();
+        $provider->getResourceOwnerDetailsUrl(new AccessToken(['access_token' => 'hello']));
+    }
 
-    /**
-     * @expectedException \League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException
-     */
-	public function testCheckResponse()
-	{
-		$class = new \ReflectionClass($this->provider);
-		$method = $class->getMethod('checkResponse');
-		$method->setAccessible(true);
+    public function testCheckResponse()
+    {
+        $this->expectException('\League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException');
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('checkResponse');
+        $method->setAccessible(true);
 
-		$method->invokeArgs($this->provider, [new Response(400, []), [
-			'error' => 'invalid_client',
-			'code' => 400
-		]]);
-	}
+        $method->invokeArgs($provider, [new Response(400, []), [
+            'error' => 'invalid_client',
+            'code' => 400
+        ]]);
+    }
 
-	public function testCreationOfResourceOwner()
-	{
-		$class = new \ReflectionClass($this->provider);
-		$method = $class->getMethod('createResourceOwner');
-		$method->setAccessible(true);
+    public function testCreationOfResourceOwner()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('createResourceOwner');
+        $method->setAccessible(true);
 
-		/** @var AppleResourceOwner $data */
-		$data = $method->invokeArgs($this->provider, [
-			[
-				'email' => 'john@doe.com',// <- Fake E-Mail from user input
-				'name' => [
-					'firstName' => 'John',
-					'lastName' => 'Doe'
-				]
-			],
-			new AccessToken([
-				'access_token' => 'hello',
-				'email' => 'john@doe.de',
-				'resource_owner_id' => '123.4.567'
-			])
-		]);
-		$this->assertEquals('john@doe.de', $data->getEmail());
-		$this->assertEquals('Doe', $data->getLastName());
-		$this->assertEquals('John', $data->getFirstName());
-		$this->assertEquals('123.4.567', $data->getId());
+        /** @var AppleResourceOwner $data */
+        $data = $method->invokeArgs($provider, [
+            [
+                'email' => 'john@doe.com',// <- Fake E-Mail from user input
+                'name' => [
+                    'firstName' => 'John',
+                    'lastName' => 'Doe'
+                ]
+            ],
+            new AccessToken([
+                'access_token' => 'hello',
+                'email' => 'john@doe.de',
+                'resource_owner_id' => '123.4.567'
+            ])
+        ]);
+        $this->assertEquals('john@doe.de', $data->getEmail());
+        $this->assertEquals('Doe', $data->getLastName());
+        $this->assertEquals('John', $data->getFirstName());
+        $this->assertEquals('123.4.567', $data->getId());
         $this->assertFalse($data->isPrivateEmail());
         $this->assertArrayHasKey('name', $data->toArray());
-	}
+    }
 }

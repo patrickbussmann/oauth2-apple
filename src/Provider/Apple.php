@@ -4,11 +4,10 @@ namespace League\OAuth2\Client\Provider;
 
 use Exception;
 use InvalidArgumentException;
-use Lcobucci\JWT\Builder;
-use Lcobucci\JWT\Signer\Ecdsa\Sha256;
+use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\LocalFileReference;
+use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key;
-use DateTimeImmutable;
-
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -210,61 +209,43 @@ class Apple extends AbstractProvider
      */
     public function getAccessToken($grant, array $options = [])
     {
-        if(class_exists('\Lcobucci\JWT\Configuration')){
-            return $this->getAccessToken34($grant,$options);
-        }
-
-        $signer = new Sha256();
+        $configuration = $this->getConfiguration();
         $time = new \DateTimeImmutable();
         $expiresAt = $time->modify('+1 Hour');
 
-        $token = (new Builder())
+        $token = $configuration->builder()
             ->issuedBy($this->teamId)
             ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($time->getTimestamp())
-            ->expiresAt($expiresAt->getTimestamp())
+            ->issuedAt($time)
+            ->expiresAt($expiresAt)
             ->relatedTo($this->clientId)
             ->withHeader('alg', 'ES256')
             ->withHeader('kid', $this->keyFileId)
-            ->getToken($signer, $this->getLocalKey());
+            ->getToken($configuration->signer(), $configuration->signingKey());
 
         $options += [
-            'client_secret' => (string) $token
+            'client_secret' => $token->toString()
         ];
 
         return parent::getAccessToken($grant, $options);
     }
 
-    private function getAccessToken34($grant, array $options = [])
+    /**
+     * @return Configuration
+     */
+    public function getConfiguration()
     {
-        $signer = new Sha256();
-        $now = new DateTimeImmutable();
-        $key = Key\LocalFileReference::file($this->keyFilePath);
-        $config = \Lcobucci\JWT\Configuration::forSymmetricSigner($signer, $key);
-
-        $token = $config->builder()
-            ->issuedBy($this->teamId)
-            ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($now)
-            ->expiresAt($now->modify('+10 minute'))
-            ->relatedTo($this->clientId)
-            ->withHeader('alg', 'ES256')
-            ->withHeader('kid', $this->keyFileId)
-            ->getToken($config->signer(), $this->getLocalKey());
-
-        $options += [
-            'client_secret' => (string) $token
-        ];
-
-        return parent::getAccessToken($grant, $options);
+        return Configuration::forSymmetricSigner(
+            Signer\Ecdsa\Sha256::create(),
+            $this->getLocalKey()
+        );
     }
-
 
     /**
      * @return Key
      */
     public function getLocalKey()
     {
-        return new Key('file://' . $this->keyFilePath);
+        return LocalFileReference::file($this->keyFilePath);
     }
 }
