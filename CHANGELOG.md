@@ -18,6 +18,14 @@ All Notable changes to `oauth2-apple` will be documented in this file
 ### Security
 - Nothing
 
+## 0.2.4 - 2021-01-17
+
+### Added
+- Codecov for Code Coverage
+
+### Fixed
+- Few compatibility issues with PHP 8 and PHP 5.6 (Read [#16](https://github.com/patrickbussmann/oauth2-apple/pull/16) for more details)
+
 ## 0.2.3 - 2021-01-05
 
 ### Added
