@@ -211,7 +211,9 @@ class Apple extends AbstractProvider
     {
         $configuration = $this->getConfiguration();
         $time = new \DateTimeImmutable();
+        $time = $time->setTime($time->format('H'), $time->format('i'), $time->format('s'));
         $expiresAt = $time->modify('+1 Hour');
+        $expiresAt = $expiresAt->setTime($expiresAt->format('H'), $expiresAt->format('i'), $expiresAt->format('s'));
 
         $token = $configuration->builder()
             ->issuedBy($this->teamId)

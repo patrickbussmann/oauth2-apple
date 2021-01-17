@@ -99,7 +99,7 @@ class AppleAccessToken extends AccessToken
             return JWK::parseKeySet(json_decode($response->getBody()->getContents(), true));
         }
 
-        return false;
+        return [];
     }
 
     /**
