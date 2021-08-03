@@ -23,12 +23,7 @@ class AppleAccessTokenTest extends TestCase
                 'sub' => '123.abc.123'
             ]);
 
-        $externalJWKMock = m::mock('overload:Firebase\JWT\JWK');
-        $externalJWKMock->shouldReceive('parseKeySet')
-            ->once()
-            ->andReturn(['examplekey']);
-
-        $accessToken = new AppleAccessToken($this->getClient(1), [
+        $accessToken = new AppleAccessToken(['examplekey'], [
             'access_token' => 'access_token',
             'token_type' => 'Bearer',
             'expires_in' => 3600,
@@ -42,7 +37,7 @@ class AppleAccessTokenTest extends TestCase
 
     public function testCreatingRefreshToken()
     {
-        $refreshToken = new AppleAccessToken($this->getClient(0), [
+        $refreshToken = new AppleAccessToken([], [
             'access_token' => 'access_token',
             'token_type' => 'Bearer',
             'expires_in' => 3600
