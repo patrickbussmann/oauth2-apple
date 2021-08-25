@@ -88,7 +88,7 @@ class Apple extends AbstractProvider
     {
         $response = $this->httpClient->request('GET', 'https://appleid.apple.com/auth/keys');
 
-        if ($response) {
+        if ($response && $response->getStatusCode() === 200) {
             return JWK::parseKeySet(json_decode($response->getBody()->getContents(), true));
         }
 
