@@ -6,7 +6,7 @@ use Exception;
 use Firebase\JWT\JWK;
 use InvalidArgumentException;
 use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer\Key\LocalFileReference;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer;
 use Lcobucci\JWT\Signer\Key;
 use League\OAuth2\Client\Grant\AbstractGrant;
@@ -252,17 +252,14 @@ class Apple extends AbstractProvider
      */
     public function getConfiguration()
     {
-        if (method_exists(Signer\Ecdsa\Sha256::class, 'create')) {
-            return Configuration::forSymmetricSigner(
-                Signer\Ecdsa\Sha256::create(),
-                $this->getLocalKey()
-            );
-        } else {
-            return Configuration::forSymmetricSigner(
-                new Signer\Ecdsa\Sha256(),
-                $this->getLocalKey()
-            );
+        if (!method_exists(Signer\Ecdsa\Sha256::class, 'create')) {
+            throw new Exception('Cannot create Ecdsa\Sha256 configuration');
         }
+
+        return Configuration::forSymmetricSigner(
+            Signer\Ecdsa\Sha256::create(),
+            $this->getLocalKey()
+        );
     }
 
     /**
@@ -270,6 +267,6 @@ class Apple extends AbstractProvider
      */
     public function getLocalKey()
     {
-        return LocalFileReference::file($this->keyFilePath);
+        return InMemory::file($this->keyFilePath);
     }
 }

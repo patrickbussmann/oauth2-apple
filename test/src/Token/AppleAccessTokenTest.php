@@ -2,6 +2,7 @@
 
 namespace League\OAuth2\Client\Test\Token;
 
+use Firebase\JWT\Key;
 use League\OAuth2\Client\Token\AppleAccessToken;
 use PHPUnit\Framework\TestCase;
 use Mockery as m;
@@ -69,11 +70,11 @@ class AppleAccessTokenTest extends TestCase
     public function testCreatingAccessTokenFailsBecauseNoDecodingIsPossible()
     {
         $this->expectException('\Exception');
-        $this->expectExceptionMessage('Got no data within "id_token"!');
+        $this->expectExceptionMessage('arguments matched no expected argument list for this method');
 
         $externalJWTMock = m::mock('overload:Firebase\JWT\JWT');
         $externalJWTMock->shouldReceive('decode')
-            ->with('something', 'examplekey', ['RS256'])
+            ->with('something', new Key('examplekey', 'RS256'))
             ->once()
             ->andReturnNull();
 
