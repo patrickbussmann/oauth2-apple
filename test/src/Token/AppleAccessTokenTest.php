@@ -72,11 +72,11 @@ class AppleAccessTokenTest extends TestCase
     public function testCreatingAccessTokenFailsBecauseNoDecodingIsPossible()
     {
         $this->expectException('\Exception');
-        $this->expectExceptionMessage('arguments matched no expected argument list for this method');
+        $this->expectExceptionMessage('Got no data within "id_token"!');
 
         $externalJWTMock = m::mock('overload:Firebase\JWT\JWT');
         $externalJWTMock->shouldReceive('decode')
-            ->with('something', new Key('examplekey', 'RS256'))
+            ->with('something', 'examplekey')
             ->once()
             ->andReturnNull();
 
