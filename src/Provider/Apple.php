@@ -252,14 +252,17 @@ class Apple extends AbstractProvider
      */
     public function getConfiguration()
     {
-        if (!method_exists(Signer\Ecdsa\Sha256::class, 'create')) {
-            throw new Exception('Cannot create Ecdsa\Sha256 configuration');
+        if (method_exists(Signer\Ecdsa\Sha256::class, 'create')) {
+            return Configuration::forSymmetricSigner(
+                Signer\Ecdsa\Sha256::create(),
+                $this->getLocalKey()
+            );
+        } else {
+            return Configuration::forSymmetricSigner(
+                new Signer\Ecdsa\Sha256(),
+                $this->getLocalKey()
+            );
         }
-
-        return Configuration::forSymmetricSigner(
-            Signer\Ecdsa\Sha256::create(),
-            $this->getLocalKey()
-        );
     }
 
     /**
