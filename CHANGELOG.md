@@ -18,6 +18,11 @@ All Notable changes to `oauth2-apple` will be documented in this file
 ### Security
 - Nothing
 
+## 0.2.7 - 2022-04-29
+
+### Added
+- Support for firebase/php-jwt v6 [#31](https://github.com/patrickbussmann/oauth2-apple/pull/31) (thanks to [bashgeek](https://github.com/bashgeek))
+
 ## 0.2.6 - 2021-08-25
 
 ### Added
