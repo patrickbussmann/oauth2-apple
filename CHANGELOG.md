@@ -18,6 +18,12 @@ All Notable changes to `oauth2-apple` will be documented in this file
 ### Security
 - Nothing
 
+## 0.2.10 - 2022-10-01
+
+### Added
+- "sub" to Resource Owner->toArray() [#38](https://github.com/patrickbussmann/oauth2-apple/pull/38)
+- Apple Key retrieval when using Guzzle Logging [#39](https://github.com/patrickbussmann/oauth2-apple/pull/39)
+
 ## 0.2.9 - 2022-07-09
 
 ### Added
