@@ -296,6 +296,40 @@ class AppleTest extends TestCase
         ]]);
     }
 
+    public function testResourceToArrayHasAttributes()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('createResourceOwner');
+        $method->setAccessible(true);
+
+        /** @var AppleResourceOwner $data */
+        $data = $method->invokeArgs($provider, [
+            [
+                'email' => 'john@doe.com',// <- Fake E-Mail from user input
+                'name' => [
+                    'firstName' => 'John',
+                    'lastName' => 'Doe'
+                ]
+            ],
+            new AccessToken([
+                'access_token' => 'hello',
+                'email' => 'john@doe.de',
+                'resource_owner_id' => '123.4.567'
+            ])
+        ]);
+        $expectedArray = [
+            'email' => 'john@doe.de',
+            'sub' => '123.4.567',
+            'name' => [
+                'firstName' => 'John',
+                'lastName' => 'Doe'
+            ],
+            'isPrivateEmail' => null
+        ];
+        $this->assertEquals($expectedArray, $data->toArray());
+    }
+
     public function testCreationOfResourceOwnerWithName()
     {
         $provider = $this->getProvider();

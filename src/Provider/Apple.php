@@ -218,6 +218,7 @@ class Apple extends AbstractProvider
     {
         return new AppleResourceOwner(
             array_merge(
+                ['sub' => $token->getResourceOwnerId()],
                 $response,
                 [
                     'email' => isset($token->getValues()['email'])
