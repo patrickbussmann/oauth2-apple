@@ -84,7 +84,7 @@ class Apple extends AbstractProvider
     /**
      * @return string[] Apple's JSON Web Keys
      */
-    private function getAppleKeys()
+    public function getAppleKeys()
     {
         $response = $this->httpClient->request('GET', 'https://appleid.apple.com/auth/keys');
 
