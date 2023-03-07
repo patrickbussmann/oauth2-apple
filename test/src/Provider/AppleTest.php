@@ -6,8 +6,10 @@ use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Psr7\Response;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key;
+use Lcobucci\JWT\Signer\Hmac\Sha256;
 use League\OAuth2\Client\Provider\Apple;
 use League\OAuth2\Client\Provider\AppleResourceOwner;
+use League\OAuth2\Client\Test\KeyDumpSigner;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Token\AppleAccessToken;
 use League\OAuth2\Client\Tool\QueryBuilderTrait;
@@ -131,7 +133,10 @@ class AppleTest extends TestCase
         $provider = m::mock($provider);
 
 
-        $configuration = Configuration::forUnsecuredSigner();
+        $configuration = Configuration::forSymmetricSigner(
+            new KeyDumpSigner(),
+            Key\InMemory::plainText('private')
+        );
 
         $time = new \DateTimeImmutable();
         $expiresAt = $time->modify('+1 Hour');
