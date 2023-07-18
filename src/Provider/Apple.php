@@ -183,7 +183,7 @@ class Apple extends AbstractProvider
      *
      * @return array
      */
-    protected function getDefaultScopes()
+    public function getDefaultScopes()
     {
         return $this->defaultScopes;
     }
