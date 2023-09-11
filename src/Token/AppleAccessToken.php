@@ -47,7 +47,8 @@ class AppleAccessToken extends AccessToken
                     try {
                         $decoded = JWT::decode($options['id_token'], $key);
                     } catch (\UnexpectedValueException $e) {
-                        $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                         $header = (object) ["alg" => 'RS256'];
+                         $decoded = JWT::decode($options['id_token'], $key, $header);
                     }
                     break;
                 } catch (\Exception $exception) {
