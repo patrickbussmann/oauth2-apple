@@ -42,12 +42,15 @@ class AppleAccessToken extends AccessToken
 
             $decoded = null;
             $last = end($keys);
+            $headers = new \stdClass();
+            $headers->alg = 'ES256';
+
             foreach ($keys as $key) {
                 try {
                     try {
                         $decoded = JWT::decode($options['id_token'], $key);
                     } catch (\UnexpectedValueException $e) {
-                        $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                        $decoded = JWT::decode($options['id_token'], $key, $headers);
                     }
                     break;
                 } catch (\Exception $exception) {
@@ -56,6 +59,7 @@ class AppleAccessToken extends AccessToken
                     }
                 }
             }
+            
             if (null === $decoded) {
                 throw new \Exception('Got no data within "id_token"!');
             }
