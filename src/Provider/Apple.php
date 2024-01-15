@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace League\OAuth2\Client\Provider;
 
@@ -26,22 +26,22 @@ class Apple extends AbstractProvider
      *
      * @var array
      */
-    public $defaultScopes = ['name', 'email'];
+    public array $defaultScopes = ['name', 'email'];
 
     /**
      * @var string the team id
      */
-    protected $teamId;
+    protected string $teamId;
 
     /**
      * @var string the key file id
      */
-    protected $keyFileId;
+    protected string $keyFileId;
 
     /**
      * @var string the key file path
      */
-    protected $keyFilePath;
+    protected string $keyFilePath;
 
     /**
      * Constructs Apple's OAuth 2.0 service provider.
@@ -76,7 +76,7 @@ class Apple extends AbstractProvider
      * @param  AbstractGrant $grant
      * @return AccessTokenInterface
      */
-    protected function createAccessToken(array $response, AbstractGrant $grant)
+    protected function createAccessToken(array $response, AbstractGrant $grant): AccessTokenInterface
     {
         return new AppleAccessToken($this->getAppleKeys(), $response);
     }
@@ -84,7 +84,7 @@ class Apple extends AbstractProvider
     /**
      * @return string[] Apple's JSON Web Keys
      */
-    private function getAppleKeys()
+    public function getAppleKeys(): array
     {
         $response = $this->httpClient->request('GET', 'https://appleid.apple.com/auth/keys');
 
@@ -100,7 +100,7 @@ class Apple extends AbstractProvider
      *
      * @return string
      */
-    protected function getScopeSeparator()
+    protected function getScopeSeparator(): string
     {
         return ' ';
     }
@@ -112,7 +112,7 @@ class Apple extends AbstractProvider
      *
      * @return array
      */
-    protected function getAuthorizationParameters(array $options)
+    protected function getAuthorizationParameters(array $options): array
     {
         $options = parent::getAuthorizationParameters($options);
         if (strpos($options['scope'], 'name') !== false || strpos($options['scope'], 'email') !== false) {
@@ -126,7 +126,7 @@ class Apple extends AbstractProvider
      *
      * @return mixed
      */
-    protected function fetchResourceOwnerDetails(AccessToken $token)
+    protected function fetchResourceOwnerDetails(AccessToken $token): mixed
     {
         return json_decode(array_key_exists('user', $_GET) ? $_GET['user']
             : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true) ?: [];
@@ -137,7 +137,7 @@ class Apple extends AbstractProvider
      *
      * @return string
      */
-    public function getBaseAuthorizationUrl()
+    public function getBaseAuthorizationUrl(): string
     {
         return 'https://appleid.apple.com/auth/authorize';
     }
@@ -147,7 +147,7 @@ class Apple extends AbstractProvider
      *
      * @return string
      */
-    public function getBaseAccessTokenUrl(array $params)
+    public function getBaseAccessTokenUrl(array $params): string
     {
         return 'https://appleid.apple.com/auth/token';
     }
@@ -157,7 +157,7 @@ class Apple extends AbstractProvider
      *
      * @return string
      */
-    public function getBaseRevokeTokenUrl(array $params)
+    public function getBaseRevokeTokenUrl(array $params): string
     {
         return 'https://appleid.apple.com/auth/revoke';
     }
@@ -170,7 +170,7 @@ class Apple extends AbstractProvider
      * @return string
      * @throws Exception
      */
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
+    public function getResourceOwnerDetailsUrl(AccessToken $token): string
     {
         throw new Exception('No Apple ID REST API available yet!');
     }
@@ -183,7 +183,7 @@ class Apple extends AbstractProvider
      *
      * @return array
      */
-    protected function getDefaultScopes()
+    public function getDefaultScopes(): array
     {
         return $this->defaultScopes;
     }
@@ -196,7 +196,7 @@ class Apple extends AbstractProvider
      * @return void
      * @throws AppleAccessDeniedException
      */
-    protected function checkResponse(ResponseInterface $response, $data)
+    protected function checkResponse(ResponseInterface $response, $data): void
     {
         if ($response->getStatusCode() >= 400) {
             throw new AppleAccessDeniedException(
@@ -214,7 +214,7 @@ class Apple extends AbstractProvider
      * @param AccessToken $token
      * @return AppleResourceOwner
      */
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, AccessToken $token): ResourceOwnerInterface
     {
         return new AppleResourceOwner(
             array_merge(
@@ -233,13 +233,13 @@ class Apple extends AbstractProvider
     /**
      * {@inheritDoc}
      */
-    public function getAccessToken($grant, array $options = [])
+    public function getAccessToken($grant, array $options = []): AccessTokenInterface
     {
         $configuration = $this->getConfiguration();
         $time = new \DateTimeImmutable();
-        $time = $time->setTime($time->format('H'), $time->format('i'), $time->format('s'));
+        $time = $time->setTime((int)$time->format('H'), (int) $time->format('i'), (int) $time->format('s'));
         $expiresAt = $time->modify('+1 Hour');
-        $expiresAt = $expiresAt->setTime($expiresAt->format('H'), $expiresAt->format('i'), $expiresAt->format('s'));
+        $expiresAt = $expiresAt->setTime((int) $expiresAt->format('H'), (int) $expiresAt->format('i'), (int) $expiresAt->format('s'));
 
         $token = $configuration->builder()
             ->issuedBy($this->teamId)
@@ -265,13 +265,13 @@ class Apple extends AbstractProvider
      * @param string|null $tokenTypeHint
      * @return \Psr\Http\Message\RequestInterface
      */
-    public function revokeAccessToken($token, $tokenTypeHint = null)
+    public function revokeAccessToken($token, $tokenTypeHint = null): mixed
     {
         $configuration = $this->getConfiguration();
         $time = new \DateTimeImmutable();
-        $time = $time->setTime($time->format('H'), $time->format('i'), $time->format('s'));
+        $time = $time->setTime((int) $time->format('H'), (int) $time->format('i'), (int) $time->format('s'));
         $expiresAt = $time->modify('+1 Hour');
-        $expiresAt = $expiresAt->setTime($expiresAt->format('H'), $expiresAt->format('i'), $expiresAt->format('s'));
+        $expiresAt = $expiresAt->setTime((int) $expiresAt->format('H'), (int) $expiresAt->format('i'), (int) $expiresAt->format('s'));
 
         $clientSecret = $configuration->builder()
             ->issuedBy($this->teamId)
@@ -309,25 +309,18 @@ class Apple extends AbstractProvider
     /**
      * @return Configuration
      */
-    public function getConfiguration()
+    public function getConfiguration(): Configuration
     {
-        if (method_exists(Signer\Ecdsa\Sha256::class, 'create')) {
-            return Configuration::forSymmetricSigner(
-                Signer\Ecdsa\Sha256::create(),
-                $this->getLocalKey()
-            );
-        } else {
             return Configuration::forSymmetricSigner(
                 new Signer\Ecdsa\Sha256(),
                 $this->getLocalKey()
             );
-        }
     }
 
     /**
      * @return Key
      */
-    public function getLocalKey()
+    public function getLocalKey(): Key
     {
         return InMemory::file($this->keyFilePath);
     }
