@@ -47,7 +47,17 @@ class AppleAccessToken extends AccessToken
                     try {
                         $decoded = JWT::decode($options['id_token'], $key);
                     } catch (\UnexpectedValueException $e) {
-                        $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                        $decodeMethodReflection = new \ReflectionMethod(JWT::class, 'decode');
+                        $decodeMethodParameters = $decodeMethodReflection->getParameters();
+                        // Backwards compatibility for firebase/php-jwt >=5.2.0 <=5.5.1 supported by PHP 5.6
+                        if (array_key_exists(2, $decodeMethodParameters) &&
+                            'allowed_algs' === $decodeMethodParameters[2]->getName()
+                        ) {
+                            $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
+                        } else {
+                            $headers = (object) ['alg' => 'RS256'];
+                            $decoded = JWT::decode($options['id_token'], $key, $headers);
+                        }
                     }
                     break;
                 } catch (\Exception $exception) {
