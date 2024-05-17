@@ -1,7 +1,7 @@
 # Changelog
 All Notable changes to `oauth2-apple` will be documented in this file
 
-## 0.3.0 - 202X-XX-XX
+## 0.4.0 - 202X-XX-XX
 
 ### Added
 - Nothing
@@ -17,6 +17,14 @@ All Notable changes to `oauth2-apple` will be documented in this file
 
 ### Security
 - Nothing
+
+## 0.3.0 - 2024-05-18
+
+### Added
+- Allow lcobucci/jwt ^5.0 [#44](https://github.com/patrickbussmann/oauth2-apple/pull/44)
+
+### Fixed
+- Handle different JWT::decode signatures [#54](https://github.com/patrickbussmann/oauth2-apple/pull/54)
 
 ## 0.2.10 - 2022-10-01
 
