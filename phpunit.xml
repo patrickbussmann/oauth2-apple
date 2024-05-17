@@ -17,6 +17,7 @@
   <testsuites>
     <testsuite name="Package Test Suite">
       <directory suffix=".php">./test/</directory>
+      <exclude>./test/ext/</exclude>
     </testsuite>
   </testsuites>
 </phpunit>
