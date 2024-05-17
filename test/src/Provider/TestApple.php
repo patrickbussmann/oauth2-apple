@@ -3,7 +3,9 @@
 namespace League\OAuth2\Client\Test\Provider;
 
 use Lcobucci\JWT\Configuration;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use League\OAuth2\Client\Provider\Apple;
+use League\OAuth2\Client\Test\KeyDumpSigner;
 
 /**
  * Class TestApple
@@ -17,7 +19,10 @@ class TestApple extends Apple
      */
     public function getConfiguration()
     {
-        return Configuration::forUnsecuredSigner();
+        return Configuration::forSymmetricSigner(
+            new KeyDumpSigner(),
+            InMemory::plainText('private')
+        );
     }
 
     /**
