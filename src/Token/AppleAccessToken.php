@@ -35,11 +35,8 @@ class AppleAccessToken extends AccessToken
      */
     public function __construct(array $keys, array $options = [])
     {
-        if (array_key_exists('refresh_token', $options)) {
-            if (empty($options['id_token'])) {
-                throw new InvalidArgumentException('Required option not passed: "id_token"');
-            }
-
+        if (array_key_exists('id_token', $options)) {
+            $this->idToken = $options['id_token'];
             $decoded = null;
             $last = end($keys);
             foreach ($keys as $key) {
@@ -81,16 +78,11 @@ class AppleAccessToken extends AccessToken
                 $this->isPrivateEmail = $payload['is_private_email'];
             }
         }
-
-        parent::__construct($options);
-
-        if (isset($options['id_token'])) {
-            $this->idToken = $options['id_token'];
-        }
-
-        if (isset($options['email'])) {
+        else if (isset($options['email'])) {
             $this->email = $options['email'];
         }
+
+        parent::__construct($options);
     }
 
     /**
