@@ -59,8 +59,8 @@ class Apple extends AbstractProvider
             throw new InvalidArgumentException('Required option not passed: "keyFileId"');
         }
 
-        if (empty($options['keyFilePath'])) {
-            throw new InvalidArgumentException('Required option not passed: "keyFilePath"');
+        if (empty($options['keyFilePath']) && empty($options['keyFileContent'])) {
+            throw new InvalidArgumentException('Required option not passed: "keyFilePath" or "keyFileContent"');
         }
 
         parent::__construct($options, $collaborators);
@@ -199,10 +199,7 @@ class Apple extends AbstractProvider
     protected function checkResponse(ResponseInterface $response, $data)
     {
         if ($response->getStatusCode() >= 400) {
-            $message = $response->getReasonPhrase();
-            if (array_key_exists('error', $data)) {
-                $message = $data['error'];
-            }
+            $message = array_key_exists('error', $data) ? $data['error'] : $response->getReasonPhrase();
             if (array_key_exists('error_description', $data)) {
                 $message .= ': ' . $data['error_description'];
             }
@@ -336,6 +333,9 @@ class Apple extends AbstractProvider
      */
     public function getLocalKey()
     {
+        if (property_exists($this, 'keyFileContent')) {
+            return InMemory::plainText($this->keyFileContent);
+        }
         return InMemory::file($this->keyFilePath);
     }
 }
