@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace League\OAuth2\Client\Token;
 
 use Firebase\JWT\JWT;
@@ -8,29 +10,18 @@ use InvalidArgumentException;
 
 class AppleAccessToken extends AccessToken
 {
-    /**
-     * @var string
-     */
-    protected $idToken;
+    protected string $idToken;
 
-    /**
-     * @var string
-     */
-    protected $email;
+    protected string $email;
 
-    /**
-     * @var boolean
-     */
-    protected $isPrivateEmail;
+    protected bool $isPrivateEmail;
 
     /**
      * @var array
      */
-    protected $tokenPayload;
+    protected array $tokenPayload;
 
     /**
-     * Constructs an access token.
-     *
      * @param Key[] $keys Valid Apple JWT keys
      * @param array $options An array of options returned by the service provider
      *     in the access token request. The `access_token` option is required.
@@ -51,18 +42,9 @@ class AppleAccessToken extends AccessToken
                 try {
                     try {
                         $decoded = JWT::decode($options['id_token'], $key);
-                    } catch (\UnexpectedValueException $e) {
-                        $decodeMethodReflection = new \ReflectionMethod(JWT::class, 'decode');
-                        $decodeMethodParameters = $decodeMethodReflection->getParameters();
-                        // Backwards compatibility for firebase/php-jwt >=5.2.0 <=5.5.1 supported by PHP 5.6
-                        if (array_key_exists(2, $decodeMethodParameters) &&
-                            'allowed_algs' === $decodeMethodParameters[2]->getName()
-                        ) {
-                            $decoded = JWT::decode($options['id_token'], $key, ['RS256']);
-                        } else {
-                            $headers = (object) ['alg' => 'RS256'];
-                            $decoded = JWT::decode($options['id_token'], $key, $headers);
-                        }
+                    } catch (\UnexpectedValueException) {
+                        $headers = (object) ['alg' => 'RS256'];
+                        $decoded = JWT::decode($options['id_token'], $key, $headers);
                     }
                     break;
                 } catch (\Exception $exception) {
@@ -92,34 +74,25 @@ class AppleAccessToken extends AccessToken
         parent::__construct($options);
 
         if (isset($options['id_token'])) {
-            $this->idToken = $options['id_token'];
+            $this->idToken = (string) $options['id_token'];
         }
 
         if (isset($options['email'])) {
-            $this->email = $options['email'];
+            $this->email = (string) $options['email'];
         }
     }
 
-    /**
-     * @return string
-     */
-    public function getIdToken()
+    public function getIdToken(): string
     {
         return $this->idToken;
     }
 
-    /**
-     * @return string
-     */
-    public function getEmail()
+    public function getEmail(): string
     {
         return $this->email;
     }
 
-    /**
-     * @return boolean
-     */
-    public function isPrivateEmail()
+    public function isPrivateEmail(): bool
     {
         return $this->isPrivateEmail;
     }
@@ -127,7 +100,7 @@ class AppleAccessToken extends AccessToken
     /**
      * @return array
      */
-    public function getTokenPayload()
+    public function getTokenPayload(): array
     {
         return $this->tokenPayload;
     }

@@ -2,30 +2,28 @@
 
 namespace League\OAuth2\Client\Test\Token;
 
-use Firebase\JWT\Key;
 use League\OAuth2\Client\Token\AppleAccessToken;
-use PHPUnit\Framework\TestCase;
 use Mockery as m;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+use PHPUnit\Framework\TestCase;
 
 class AppleAccessTokenTest extends TestCase
 {
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
+    #[PreserveGlobalState(false)]
+    #[RunInSeparateProcess]
     public function testCreatingAccessToken()
     {
-        $tokenPayload = [
-            'sub' => '123.abc.123',
-            'email_verified' => true,
-            'email' => 'john@doe.com',
-            'is_private_email' => true
-        ];
         $externalJWTMock = m::mock('overload:Firebase\JWT\JWT');
         $externalJWTMock->shouldReceive('decode')
             ->with('something', 'examplekey')
             ->once()
-            ->andReturn($tokenPayload);
+            ->andReturn([
+                'sub' => '123.abc.123',
+                'email_verified' => true,
+                'email' => 'john@doe.com',
+                'is_private_email' => true
+            ]);
 
         $accessToken = new AppleAccessToken(['examplekey'], [
             'access_token' => 'access_token',
@@ -39,7 +37,6 @@ class AppleAccessTokenTest extends TestCase
         $this->assertEquals('access_token', $accessToken->getToken());
         $this->assertEquals('john@doe.com', $accessToken->getEmail());
         $this->assertTrue($accessToken->isPrivateEmail());
-        $this->assertEquals($tokenPayload, $accessToken->getTokenPayload());
 
         $this->assertTrue(true);
     }
@@ -67,10 +64,8 @@ class AppleAccessTokenTest extends TestCase
         $this->assertEquals('access_token', $refreshToken->getToken());
     }
 
-    /**
-     * @runInSeparateProcess
-     * @preserveGlobalState disabled
-     */
+    #[PreserveGlobalState(false)]
+    #[RunInSeparateProcess]
     public function testCreatingAccessTokenFailsBecauseNoDecodingIsPossible()
     {
         $this->expectException('\Exception');

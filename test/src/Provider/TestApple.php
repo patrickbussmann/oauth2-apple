@@ -12,24 +12,14 @@ use League\OAuth2\Client\Test\KeyDumpSigner;
  * @package League\OAuth2\Client\Test\Provider
  * @author Patrick Bußmann <patrick.bussmann@bussmann-it.de>
  */
+
 class TestApple extends Apple
 {
     /**
      * {@inheritDoc}
      */
-    public function getConfiguration()
+    public function getLocalKey(): string
     {
-        return Configuration::forSymmetricSigner(
-            new KeyDumpSigner(),
-            InMemory::plainText('private')
-        );
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getLocalKey()
-    {
-        return null;
+        return 'file://' . __DIR__ . '/../private_key.pem';
     }
 }
