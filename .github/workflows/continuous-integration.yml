@@ -14,14 +14,14 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.0'
           coverage: none
           ini-values: memory_limit=-1
           tools: composer:v2
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
       - name: 'Lint the PHP source code'
         run: ./vendor/bin/parallel-lint src test
 
@@ -29,14 +29,14 @@ jobs:
     name: Coding Standards
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.0'
           coverage: none
           ini-values: memory_limit=-1
           tools: composer:v2
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
       - name: Check coding standards
         run: ./vendor/bin/phpcs src --standard=psr2 -sp --colors
 
@@ -63,7 +63,7 @@ jobs:
           - php-version: '8.3'
             experimental: false
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '${{ matrix.php-version }}'
@@ -72,11 +72,11 @@ jobs:
           tools: composer:v2
       - name: Prepare for tests
         run: mkdir -p build/logs
-      - uses: ramsey/composer-install@v3
+      - uses: ramsey/composer-install@v4
         with:
           dependency-versions: '${{ matrix.dependencies }}'
           composer-options: '${{ matrix.composer-options }}'
       - name: Run unit tests
         run: ./vendor/bin/phpunit --colors=always --coverage-clover build/logs/clover.xml
       - name: Publish coverage report to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
