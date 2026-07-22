@@ -23,7 +23,7 @@ All Notable changes to `oauth2-apple` will be documented in this file
 
 
 ### Added
-- Nothing
+- Add information in `composer.json` file to help SBOM generation [#71](https://github.com/patrickbussmann/oauth2-apple/pull/71)
 
 ### Deprecated
 - Nothing
