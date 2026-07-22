@@ -1,7 +1,6 @@
 # Sign in with Apple ID Provider for OAuth 2.0 Client
 [![Latest Version](https://img.shields.io/github/release/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://github.com/patrickbussmann/oauth2-apple/releases)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
-[![Build Status](https://img.shields.io/travis/patrickbussmann/oauth2-apple/main.svg?style=flat-square)](https://travis-ci.org/patrickbussmann/oauth2-apple)
 [![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://scrutinizer-ci.com/g/patrickbussmann/oauth2-apple/code-structure)
 [![Quality Score](https://img.shields.io/scrutinizer/g/patrickbussmann/oauth2-apple.svg?style=flat-square)](https://scrutinizer-ci.com/g/patrickbussmann/oauth2-apple)
 [![codecov](https://codecov.io/gh/patrickbussmann/oauth2-apple/branch/main/graph/badge.svg?token=TN3ZNVHUXV)](https://codecov.io/gh/patrickbussmann/oauth2-apple)
