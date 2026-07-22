@@ -1,14 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace League\OAuth2\Client\Provider;
 
 use Exception;
 use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use InvalidArgumentException;
-use Lcobucci\JWT\Configuration;
-use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Signer;
-use Lcobucci\JWT\Signer\Key;
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Provider\Exception\AppleAccessDeniedException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -24,30 +24,21 @@ class Apple extends AbstractProvider
     /**
      * Default scopes
      *
-     * @var array
+     * @var array<string>
      */
-    public $defaultScopes = ['name', 'email'];
+    public array $defaultScopes = ['name', 'email'];
 
-    /**
-     * @var string the team id
-     */
-    protected $teamId;
+    /* the team id */
+    protected string $teamId;
 
-    /**
-     * @var string the key file id
-     */
-    protected $keyFileId;
+    /* the key file id */
+    protected string $keyFileId;
 
-    /**
-     * @var string the key file path
-     */
+    /* the key file path */
     protected $keyFilePath;
 
     /**
-     * Constructs Apple's OAuth 2.0 service provider.
-     *
-     * @param array $options
-     * @param array $collaborators
+     * @inheritDoc
      */
     public function __construct(array $options = [], array $collaborators = [])
     {
@@ -67,28 +58,22 @@ class Apple extends AbstractProvider
     }
 
     /**
-     * Creates an access token from a response.
-     *
-     * The grant that was used to fetch the response can be used to provide
-     * additional context.
-     *
-     * @param  array         $response
-     * @param  AbstractGrant $grant
-     * @return AccessTokenInterface
+     * @inheritDoc
      */
-    protected function createAccessToken(array $response, AbstractGrant $grant)
+    protected function createAccessToken(array $response, AbstractGrant $grant): AccessTokenInterface
     {
         return new AppleAccessToken($this->getAppleKeys(), $response);
     }
 
     /**
-     * @return string[] Apple's JSON Web Keys
+     * @return array<string, Key> Apple's JSON Web Keys
+     * @throws GuzzleException
      */
-    private function getAppleKeys()
+    private function getAppleKeys(): array
     {
         $response = $this->httpClient->request('GET', 'https://appleid.apple.com/auth/keys');
 
-        if ($response && $response->getStatusCode() === 200) {
+        if ($response->getStatusCode() === 200) {
             return JWK::parseKeySet(json_decode($response->getBody()->__toString(), true));
         }
 
@@ -96,35 +81,27 @@ class Apple extends AbstractProvider
     }
 
     /**
-     * Get the string used to separate scopes.
-     *
-     * @return string
+     * @inheritDoc
      */
-    protected function getScopeSeparator()
+    protected function getScopeSeparator(): string
     {
         return ' ';
     }
 
     /**
-     * Change response mode when scope requires it
-     *
-     * @param array $options
-     *
-     * @return array
+     * @inheritDoc
      */
-    protected function getAuthorizationParameters(array $options)
+    protected function getAuthorizationParameters(array $options): array
     {
         $options = parent::getAuthorizationParameters($options);
-        if (strpos($options['scope'], 'name') !== false || strpos($options['scope'], 'email') !== false) {
+        if (str_contains($options['scope'], 'name') || str_contains($options['scope'], 'email')) {
             $options['response_mode'] = 'form_post';
         }
         return $options;
     }
 
     /**
-     * @param AccessToken $token
-     *
-     * @return mixed
+     * @inheritDoc
      */
     protected function fetchResourceOwnerDetails(AccessToken $token)
     {
@@ -133,31 +110,23 @@ class Apple extends AbstractProvider
     }
 
     /**
-     * Get authorization url to begin OAuth flow
-     *
-     * @return string
+     * @inheritDoc
      */
-    public function getBaseAuthorizationUrl()
+    public function getBaseAuthorizationUrl(): string
     {
         return 'https://appleid.apple.com/auth/authorize';
     }
 
     /**
-     * Get access token url to retrieve token
-     *
-     * @return string
+     * @inheritDoc
      */
-    public function getBaseAccessTokenUrl(array $params)
+    public function getBaseAccessTokenUrl(array $params): string
     {
         return 'https://appleid.apple.com/auth/token';
     }
 
-    /**
-     * Get revoke token url to revoke token
-     *
-     * @return string
-     */
-    public function getBaseRevokeTokenUrl(array $params)
+    /* Get revoke token url to revoke token */
+    public function getBaseRevokeTokenUrl(): string
     {
         return 'https://appleid.apple.com/auth/revoke';
     }
@@ -165,25 +134,18 @@ class Apple extends AbstractProvider
     /**
      * Get provider url to fetch user details
      *
-     * @param AccessToken $token
-     *
-     * @return string
+     * @inheritDoc
      * @throws Exception
      */
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
+    public function getResourceOwnerDetailsUrl(AccessToken $token): string
     {
         throw new Exception('No Apple ID REST API available yet!');
     }
 
     /**
-     * Get the default scopes used by this provider.
-     *
-     * This should not be a complete list of all scopes, but the minimum
-     * required for the provider user interface!
-     *
-     * @return array
+     * @inheritDoc
      */
-    protected function getDefaultScopes()
+    protected function getDefaultScopes(): array
     {
         return $this->defaultScopes;
     }
@@ -191,12 +153,10 @@ class Apple extends AbstractProvider
     /**
      * Check a provider response for errors.
      *
-     * @param  ResponseInterface $response
-     * @param  array             $data     Parsed response data
-     * @return void
+     * @inheritDoc
      * @throws AppleAccessDeniedException
      */
-    protected function checkResponse(ResponseInterface $response, $data)
+    protected function checkResponse(ResponseInterface $response, $data): void
     {
         if ($response->getStatusCode() >= 400) {
             $message = $response->getReasonPhrase();
@@ -217,19 +177,16 @@ class Apple extends AbstractProvider
     /**
      * Generate a user object from a successful user details request.
      *
-     * @param array $response
-     * @param AccessToken $token
-     * @return AppleResourceOwner
+     * @inheritDoc
      */
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, AccessToken $token): AppleResourceOwner
     {
         return new AppleResourceOwner(
             array_merge(
                 ['sub' => $token->getResourceOwnerId()],
                 $response,
                 [
-                    'email' => isset($token->getValues()['email'])
-                        ? $token->getValues()['email'] : (isset($response['email']) ? $response['email'] : null),
+                    'email' => $token->getValues()['email'] ?? ($response['email'] ?? null),
                     'isPrivateEmail' => $token instanceof AppleAccessToken ? $token->isPrivateEmail() : null
                 ]
             ),
@@ -240,69 +197,74 @@ class Apple extends AbstractProvider
     /**
      * {@inheritDoc}
      */
-    public function getAccessToken($grant, array $options = [])
+    public function getAccessToken($grant, array $options = []): AccessTokenInterface
     {
-        $configuration = $this->getConfiguration();
-        $time = new \DateTimeImmutable();
-        $time = $time->setTime($time->format('H'), $time->format('i'), $time->format('s'));
-        $expiresAt = $time->modify('+1 Hour');
-        $expiresAt = $expiresAt->setTime($expiresAt->format('H'), $expiresAt->format('i'), $expiresAt->format('s'));
+        $time = time();
 
-        $token = $configuration->builder()
-            ->issuedBy($this->teamId)
-            ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($time)
-            ->expiresAt($expiresAt)
-            ->relatedTo($this->clientId)
-            ->withHeader('alg', 'ES256')
-            ->withHeader('kid', $this->keyFileId)
-            ->getToken($configuration->signer(), $configuration->signingKey());
+        $payload = [
+            'iss' => $this->teamId,
+            'iat' => $time,
+            'exp' => $time + 3600,
+            'aud' => 'https://appleid.apple.com',
+            'sub' => $this->clientId,
+        ];
+
+        $jwt = JWT::encode(
+            $payload,
+            $this->getLocalKey(),
+            'ES256',
+            $this->keyFileId,
+            [
+                'kid' => $this->keyFileId,
+                'alg' => 'ES256',
+            ]
+        );
 
         $options += [
-            'client_secret' => $token->toString()
+            'client_secret' => $jwt
         ];
 
         return parent::getAccessToken($grant, $options);
     }
 
-    /**
-     * Revokes an access or refresh token using a specified token.
-     *
-     * @param string $token
-     * @param string|null $tokenTypeHint
-     * @return \Psr\Http\Message\RequestInterface
-     */
-    public function revokeAccessToken($token, $tokenTypeHint = null)
+    /* Revokes an access or refresh token using a specified token. */
+    public function revokeAccessToken(string $token, ?string $tokenTypeHint = null)
     {
-        $configuration = $this->getConfiguration();
-        $time = new \DateTimeImmutable();
-        $time = $time->setTime($time->format('H'), $time->format('i'), $time->format('s'));
-        $expiresAt = $time->modify('+1 Hour');
-        $expiresAt = $expiresAt->setTime($expiresAt->format('H'), $expiresAt->format('i'), $expiresAt->format('s'));
+        $time = time();
 
-        $clientSecret = $configuration->builder()
-            ->issuedBy($this->teamId)
-            ->permittedFor('https://appleid.apple.com')
-            ->issuedAt($time)
-            ->expiresAt($expiresAt)
-            ->relatedTo($this->clientId)
-            ->withHeader('alg', 'ES256')
-            ->withHeader('kid', $this->keyFileId)
-            ->getToken($configuration->signer(), $configuration->signingKey());
+        $payload = [
+            'iss' => $this->teamId,
+            'iat' => $time,
+            'exp' => $time + 3600,
+            'aud' => 'https://appleid.apple.com',
+            'sub' => $this->clientId,
+        ];
+
+        $clientSecret = JWT::encode(
+            $payload,
+            $this->getLocalKey(),
+            'ES256',
+            $this->keyFileId,
+            [
+                'kid' => $this->keyFileId,
+                'alg' => 'ES256',
+            ]
+        );
 
         $params = [
-            'client_id'     => $this->clientId,
-            'client_secret' => $clientSecret->toString(),
-            'token'         => $token
+            'client_id' => $this->clientId,
+            'client_secret' => $clientSecret,
+            'token' => $token
         ];
+
         if ($tokenTypeHint !== null) {
             $params += [
                 'token_type_hint' => $tokenTypeHint
             ];
         }
 
-        $method  = $this->getAccessTokenMethod();
-        $url     = $this->getBaseRevokeTokenUrl($params);
+        $method = $this->getAccessTokenMethod();
+        $url = $this->getBaseRevokeTokenUrl();
         if (property_exists($this, 'optionProvider')) {
             $options = $this->optionProvider->getAccessTokenOptions(self::METHOD_POST, $params);
         } else {
@@ -313,29 +275,12 @@ class Apple extends AbstractProvider
         return $this->getParsedResponse($request);
     }
 
-    /**
-     * @return Configuration
-     */
-    public function getConfiguration()
+    public function getLocalKey(): string
     {
-        if (method_exists(Signer\Ecdsa\Sha256::class, 'create')) {
-            return Configuration::forSymmetricSigner(
-                Signer\Ecdsa\Sha256::create(),
-                $this->getLocalKey()
-            );
-        } else {
-            return Configuration::forSymmetricSigner(
-                new Signer\Ecdsa\Sha256(),
-                $this->getLocalKey()
-            );
+        if (!file_exists($this->keyFilePath)) {
+            throw new \InvalidArgumentException('Could not read key file');
         }
-    }
 
-    /**
-     * @return Key
-     */
-    public function getLocalKey()
-    {
-        return InMemory::file($this->keyFilePath);
+        return file_get_contents($this->keyFilePath);
     }
 }

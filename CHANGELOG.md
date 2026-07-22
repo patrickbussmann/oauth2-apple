@@ -1,7 +1,8 @@
 # Changelog
 All Notable changes to `oauth2-apple` will be documented in this file
 
-## 0.4.0 - 202X-XX-XX
+## 0.6.0 - 202X-XX-XX
+
 
 ### Added
 - Nothing
@@ -17,6 +18,35 @@ All Notable changes to `oauth2-apple` will be documented in this file
 
 ### Security
 - Nothing
+
+## 0.5.0 - 202X-XX-XX
+
+
+### Added
+- Nothing
+
+### Deprecated
+- Nothing
+
+### Fixed
+- Upgrade GitHub Action workflow [#69](https://github.com/patrickbussmann/oauth2-apple/pull/69)
+
+### Removed
+- Remove `lcobucci/jwt` dependency, to use only `firebase/php-jwt`  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
+- Remove PHP < 8.1 support  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
+
+### Security
+- Nothing
+
+
+## 0.4.0 - 2026-02-26
+
+### Added
+* Add error_description to exception message by @grasmash in [#57](https://github.com/patrickbussmann/oauth2-apple/pull/57)
+* Add running test on PHP 8.3 and 8.5 (drop tests on PHP <=7.4) by @jbcr in [#67](https://github.com/patrickbussmann/oauth2-apple/pull/67)
+
+### Security
+* chore(deps): bump firebase/php-jwt to ^5.2 || ^6.0 || ^7.0 by @deadLocks21 in [#62](https://github.com/patrickbussmann/oauth2-apple/pull/62)
 
 ## 0.3.0 - 2024-05-18
 
