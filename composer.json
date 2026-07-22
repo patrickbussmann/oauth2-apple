@@ -1,14 +1,21 @@
 {
   "name": "patrickbussmann/oauth2-apple",
+  "type": "library",
   "description": "Sign in with Apple OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
   "license": "MIT",
   "authors": [
     {
       "name": "Patrick Bußmann",
       "email": "patrick.bussmann@bussmann-it.de",
-      "homepage": "https://github.com/patrickbussmann"
+      "homepage": "https://github.com/patrickbussmann",
+      "role": "Author"
     }
   ],
+  "support": {
+    "issues": "https://github.com/patrickbussmann/oauth2-apple/issues",
+    "source": "https://github.com/patrickbussmann/oauth2-apple/"
+  },
+  "homepage": "https://github.com/patrickbussmann/oauth2-apple/#readme",
   "keywords": [
     "oauth",
     "oauth2",
@@ -18,6 +25,7 @@
     "apple",
     "sign-in-with-apple"
   ],
+  "prefer-stable": true,
   "require": {
     "php": ">=8.1",
     "ext-json": "*",
@@ -43,7 +51,7 @@
   },
   "extra": {
     "branch-alias": {
-      "dev-master": "0.4.x-dev"
+      "dev-master": "0.5.x-dev"
     }
   }
 }
