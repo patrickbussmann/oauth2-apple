@@ -36,7 +36,8 @@ All Notable changes to `oauth2-apple` will be documented in this file
 - Remove PHP < 8.1 support  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
 
 ### Security
-- Nothing
+- Convert GitHub Action version to SHA commit hash
+- Configure Dependabot to keep GHA workflow updated
 
 
 ## 0.4.0 - 2026-02-26
