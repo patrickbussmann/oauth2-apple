@@ -1,6 +1,11 @@
 # Changelog
 All Notable changes to `oauth2-apple` will be documented in this file
 
+## Unreleased
+
+### Added
+- Allow firebase/php-jwt ^7.0, including the key size validation fix for CVE-2025-45769.
+
 ## 0.4.0 - 202X-XX-XX
 
 ### Added
