@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace League\OAuth2\Client\Token;
 
+use Firebase\JWT\BeforeValidException;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use InvalidArgumentException;
@@ -16,7 +18,7 @@ class AppleAccessToken extends AccessToken
 
     protected string $idToken;
 
-    protected string $email;
+    protected ?string $email = null;
 
     protected bool $isPrivateEmail = false;
 
@@ -38,10 +40,14 @@ class AppleAccessToken extends AccessToken
      */
     public function __construct(array $keys, array $options = [], ?string $clientId = null)
     {
-        if (array_key_exists('refresh_token', $options)) {
-            if (empty($options['id_token'])) {
-                throw new InvalidArgumentException('Required option not passed: "id_token"');
-            }
+        if (array_key_exists('refresh_token', $options) && empty($options['id_token'])) {
+            throw new InvalidArgumentException('Required option not passed: "id_token"');
+        }
+
+        // every ID token is verified, also without a refresh token (refresh grant, hand-built tokens)
+        if (!empty($options['id_token'])) {
+            // identity comes only from the signed ID token, never from the given options
+            unset($options['resource_owner_id'], $options['email']);
 
             $decoded = null;
             $last = end($keys);
@@ -54,6 +60,9 @@ class AppleAccessToken extends AccessToken
                         $decoded = JWT::decode($options['id_token'], $key, $headers);
                     }
                     break;
+                } catch (ExpiredException | BeforeValidException $exception) {
+                    // the signature matched this key, so no other key can give a better answer
+                    throw $exception;
                 } catch (\Exception $exception) {
                     if ($last === $key) {
                         throw $exception;
@@ -69,7 +78,7 @@ class AppleAccessToken extends AccessToken
 
             $options['resource_owner_id'] = $payload['sub'];
 
-            if (isset($payload['email']) && self::isTrue($payload['email_verified'] ?? false)) {
+            if (is_string($payload['email'] ?? null) && self::isTrue($payload['email_verified'] ?? false)) {
                 $options['email'] = $payload['email'];
             }
 
@@ -102,7 +111,7 @@ class AppleAccessToken extends AccessToken
             throw new UnexpectedValueException('Invalid "iss" claim within "id_token"');
         }
 
-        if (empty($payload['sub'])) {
+        if (!is_string($payload['sub'] ?? null) || $payload['sub'] === '') {
             throw new UnexpectedValueException('Missing "sub" claim within "id_token"');
         }
 
@@ -131,7 +140,7 @@ class AppleAccessToken extends AccessToken
         return $this->idToken;
     }
 
-    public function getEmail(): string
+    public function getEmail(): ?string
     {
         return $this->email;
     }

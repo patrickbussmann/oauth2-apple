@@ -199,6 +199,88 @@ class AppleAccessTokenTest extends TestCase
         ]), 'mock.example');
 
         $this->assertArrayNotHasKey('email', $token->getValues());
+        $this->assertNull($token->getEmail());
         $this->assertFalse($token->isPrivateEmail());
+    }
+
+    public function testIdTokenWithoutRefreshTokenIsValidated()
+    {
+        $options = self::tokenOptions(['aud' => 'another.apple.client']);
+        unset($options['refresh_token']);
+
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('Invalid "aud" claim within "id_token"');
+
+        new AppleAccessToken(self::appleKeys(), $options, 'mock.example');
+    }
+
+    public function testForgedIdTokenWithoutRefreshTokenIsRejected()
+    {
+        $forger = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_RSA, 'private_key_bits' => 2048]);
+        $claims = [
+            'iss' => 'https://appleid.apple.com',
+            'aud' => 'mock.example',
+            'sub' => 'victim',
+            'iat' => time(),
+            'exp' => time() + 600,
+        ];
+
+        $this->expectException(\Firebase\JWT\SignatureInvalidException::class);
+
+        new AppleAccessToken(self::appleKeys(), [
+            'access_token' => 'access_token',
+            'id_token' => JWT::encode($claims, $forger, 'RS256', 'test'),
+            'resource_owner_id' => 'victim',
+            'email' => 'victim@example.com',
+        ], 'mock.example');
+    }
+
+    public function testIdentityFromOptionsIsIgnored()
+    {
+        $token = new AppleAccessToken(self::appleKeys(), self::tokenOptions([
+            'email' => 'john@doe.com',
+            'email_verified' => 'false',
+        ]) + [
+            'resource_owner_id' => 'victim',
+            'email' => 'victim@example.com',
+        ], 'mock.example');
+
+        $this->assertEquals('123.abc.123', $token->getResourceOwnerId());
+        $this->assertArrayNotHasKey('email', $token->getValues());
+        $this->assertNull($token->getEmail());
+    }
+
+    public function testExpiredIdTokenIsReportedWithSeveralKeys()
+    {
+        $other = openssl_pkey_get_details(openssl_pkey_new([
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => 2048,
+        ]))['key'];
+
+        $this->expectException(\Firebase\JWT\ExpiredException::class);
+
+        new AppleAccessToken(self::appleKeys() + ['other' => new Key($other, 'RS256')], self::tokenOptions([
+            'iat' => time() - 7200,
+            'exp' => time() - 3600,
+        ]), 'mock.example');
+    }
+
+    public function testNonStringEmailIsIgnored()
+    {
+        $token = new AppleAccessToken(self::appleKeys(), self::tokenOptions([
+            'email' => ['john@doe.com'],
+            'email_verified' => true,
+        ]), 'mock.example');
+
+        $this->assertArrayNotHasKey('email', $token->getValues());
+        $this->assertNull($token->getEmail());
+    }
+
+    public function testNonStringSubIsRejected()
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('Missing "sub" claim within "id_token"');
+
+        new AppleAccessToken(self::appleKeys(), self::tokenOptions(['sub' => ['123']]), 'mock.example');
     }
 }

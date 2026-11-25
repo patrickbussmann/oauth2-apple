@@ -1,20 +1,28 @@
 # Changelog
 All Notable changes to `oauth2-apple` will be documented in this file
 
-## 0.6.0 - 2026-11-23
-
+## 0.5.0 - 2026-11-25
 
 ### Added
 - `AppleAccessToken` accepts the client ID as optional third argument
+- Add information in `composer.json` file to help SBOM generation [#71](https://github.com/patrickbussmann/oauth2-apple/pull/71)
 
 ### Deprecated
 - Creating an `AppleAccessToken` without a client ID (skips the `aud` check, will be required in 1.0)
 
 ### Fixed
 - `email_verified` and `is_private_email` sent as strings (`"false"`) are now read correctly
+- `AppleAccessToken::getEmail()` returns `null` instead of failing when the ID token has no verified email
+  (the return type is now `?string`)
+- An expired ID token is reported as `ExpiredException` when Apple publishes several keys,
+  no longer as a failed signature check
+- A malformed `user` field in the request no longer causes a `TypeError`
+- The test suite no longer needs network access and signs its client secret with a P-256 key
+- Upgrade GitHub Action workflow [#69](https://github.com/patrickbussmann/oauth2-apple/pull/69)
 
 ### Removed
-- Nothing
+- Remove `lcobucci/jwt` dependency, to use only `firebase/php-jwt`  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
+- Remove PHP < 8.1 support  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
 
 ### Security
 - The ID token is now checked for `iss` (`https://appleid.apple.com`) and `aud` (your client ID).
@@ -24,26 +32,13 @@ All Notable changes to `oauth2-apple` will be documented in this file
   `user` field from the request was used as fallback when the ID token had no email,
   which could lead to account takeover in apps that link accounts by email.
   Reported by Rathnadeepan (HotWater, [@HotWater-015](https://github.com/HotWater-015)).
-
-## 0.5.0 - 202X-XX-XX
-
-
-### Added
-- Add information in `composer.json` file to help SBOM generation [#71](https://github.com/patrickbussmann/oauth2-apple/pull/71)
-
-### Deprecated
-- Nothing
-
-### Fixed
-- Upgrade GitHub Action workflow [#69](https://github.com/patrickbussmann/oauth2-apple/pull/69)
-
-### Removed
-- Remove `lcobucci/jwt` dependency, to use only `firebase/php-jwt`  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
-- Remove PHP < 8.1 support  [#70](https://github.com/patrickbussmann/oauth2-apple/pull/70)
-
-### Security
+- Every ID token is now verified, also when the response has no `refresh_token` (refresh token grant,
+  tokens you create yourself). Before, such an ID token was accepted without any check.
+- `resource_owner_id` and `email` passed in the options are ignored when an ID token is present.
 - Convert GitHub Action version to SHA commit hash
 - Configure Dependabot to keep GHA workflow updated
+- Bump `codecov/codecov-action` to 7.1.1 [#72](https://github.com/patrickbussmann/oauth2-apple/pull/72)
+  and `shivammathur/setup-php` to 2.40.0 [#73](https://github.com/patrickbussmann/oauth2-apple/pull/73)
 
 
 ## 0.4.0 - 2026-02-26
