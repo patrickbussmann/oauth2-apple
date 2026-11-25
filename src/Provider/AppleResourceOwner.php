@@ -27,11 +27,7 @@ class AppleResourceOwner extends GenericResourceOwner
 
     public function getFirstName(): ?string
     {
-        $name = $this->getAttribute('name');
-        if (is_array($name)) {
-            return $name['firstName'];
-        }
-        return null;
+        return $this->getNamePart('firstName');
     }
 
     /**
@@ -44,16 +40,21 @@ class AppleResourceOwner extends GenericResourceOwner
 
     public function getLastName(): ?string
     {
-        $name = $this->getAttribute('name');
-        if (is_array($name)) {
-            return $name['lastName'];
-        }
-        return null;
+        return $this->getNamePart('lastName');
     }
 
     public function getEmail(): ?string
     {
         return $this->getAttribute('email');
+    }
+
+    /* the name comes from the unsigned "user" field, so its shape is not guaranteed */
+    private function getNamePart(string $key): ?string
+    {
+        $name = $this->getAttribute('name');
+        $part = is_array($name) ? ($name[$key] ?? null) : null;
+
+        return is_string($part) ? $part : null;
     }
 
     public function isPrivateEmail(): bool

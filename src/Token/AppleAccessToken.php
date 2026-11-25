@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace League\OAuth2\Client\Token;
 
+use Firebase\JWT\BeforeValidException;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use InvalidArgumentException;
+use UnexpectedValueException;
 
 class AppleAccessToken extends AccessToken
 {
+    /* the issuer of every ID token signed by Apple */
+    public const ISSUER = 'https://appleid.apple.com';
+
     protected string $idToken;
 
-    protected string $email;
+    protected ?string $email = null;
 
-    protected bool $isPrivateEmail;
+    protected bool $isPrivateEmail = false;
 
     /**
      * @var array
@@ -25,16 +31,23 @@ class AppleAccessToken extends AccessToken
      * @param Key[] $keys Valid Apple JWT keys
      * @param array $options An array of options returned by the service provider
      *     in the access token request. The `access_token` option is required.
+     * @param string|null $clientId The client ID (Services ID or Bundle ID) the ID token must be issued for.
+     *     Will be required in a future major version.
      * @throws InvalidArgumentException if `access_token` is not provided in `$options`.
+     * @throws UnexpectedValueException if the ID token was not issued by Apple for this client.
      *
      * @throws \Exception
      */
-    public function __construct(array $keys, array $options = [])
+    public function __construct(array $keys, array $options = [], ?string $clientId = null)
     {
-        if (array_key_exists('refresh_token', $options)) {
-            if (empty($options['id_token'])) {
-                throw new InvalidArgumentException('Required option not passed: "id_token"');
-            }
+        if (array_key_exists('refresh_token', $options) && empty($options['id_token'])) {
+            throw new InvalidArgumentException('Required option not passed: "id_token"');
+        }
+
+        // every ID token is verified, also without a refresh token (refresh grant, hand-built tokens)
+        if (!empty($options['id_token'])) {
+            // identity comes only from the signed ID token, never from the given options
+            unset($options['resource_owner_id'], $options['email']);
 
             $decoded = null;
             $last = end($keys);
@@ -47,6 +60,9 @@ class AppleAccessToken extends AccessToken
                         $decoded = JWT::decode($options['id_token'], $key, $headers);
                     }
                     break;
+                } catch (ExpiredException | BeforeValidException $exception) {
+                    // the signature matched this key, so no other key can give a better answer
+                    throw $exception;
                 } catch (\Exception $exception) {
                     if ($last === $key) {
                         throw $exception;
@@ -58,14 +74,16 @@ class AppleAccessToken extends AccessToken
             }
             $payload = json_decode(json_encode($decoded), true);
 
+            $this->validateClaims($payload, $clientId);
+
             $options['resource_owner_id'] = $payload['sub'];
 
-            if (isset($payload['email_verified']) && $payload['email_verified']) {
+            if (is_string($payload['email'] ?? null) && self::isTrue($payload['email_verified'] ?? false)) {
                 $options['email'] = $payload['email'];
             }
 
             if (isset($payload['is_private_email'])) {
-                $this->isPrivateEmail = $payload['is_private_email'];
+                $this->isPrivateEmail = self::isTrue($payload['is_private_email']);
             }
 
             $this->tokenPayload = $payload;
@@ -82,12 +100,47 @@ class AppleAccessToken extends AccessToken
         }
     }
 
+    /**
+     * The signature and the time claims (exp, iat, nbf) are already checked by JWT::decode().
+     *
+     * @throws UnexpectedValueException
+     */
+    private function validateClaims(array $payload, ?string $clientId): void
+    {
+        if (($payload['iss'] ?? null) !== self::ISSUER) {
+            throw new UnexpectedValueException('Invalid "iss" claim within "id_token"');
+        }
+
+        if (!is_string($payload['sub'] ?? null) || $payload['sub'] === '') {
+            throw new UnexpectedValueException('Missing "sub" claim within "id_token"');
+        }
+
+        if ($clientId === null) {
+            trigger_error(
+                'Creating an AppleAccessToken without a client ID skips the "aud" check'
+                . ' and is deprecated. Pass the client ID as third argument.',
+                E_USER_DEPRECATED
+            );
+            return;
+        }
+
+        if (!in_array($clientId, (array) ($payload['aud'] ?? []), true)) {
+            throw new UnexpectedValueException('Invalid "aud" claim within "id_token"');
+        }
+    }
+
+    /* Apple sends some boolean claims as strings ("true" / "false") */
+    private static function isTrue(mixed $value): bool
+    {
+        return $value === true || $value === 'true';
+    }
+
     public function getIdToken(): string
     {
         return $this->idToken;
     }
 
-    public function getEmail(): string
+    public function getEmail(): ?string
     {
         return $this->email;
     }

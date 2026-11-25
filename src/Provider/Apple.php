@@ -62,7 +62,7 @@ class Apple extends AbstractProvider
      */
     protected function createAccessToken(array $response, AbstractGrant $grant): AccessTokenInterface
     {
-        return new AppleAccessToken($this->getAppleKeys(), $response);
+        return new AppleAccessToken($this->getAppleKeys(), $response, $this->clientId);
     }
 
     /**
@@ -101,12 +101,17 @@ class Apple extends AbstractProvider
     }
 
     /**
+     * Returns the "user" field Apple posts on the first login (name, email).
+     * This field is NOT signed. Use it for display only, never for identity.
+     *
      * @inheritDoc
      */
     protected function fetchResourceOwnerDetails(AccessToken $token)
     {
-        return json_decode(array_key_exists('user', $_GET) ? $_GET['user']
-            : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true) ?: [];
+        $user = $_GET['user'] ?? $_POST['user'] ?? null;
+        $details = is_string($user) ? json_decode($user, true) : null;
+
+        return is_array($details) ? $details : [];
     }
 
     /**
@@ -176,6 +181,7 @@ class Apple extends AbstractProvider
 
     /**
      * Generate a user object from a successful user details request.
+     * Identity (sub, email) comes only from the signed ID token, never from the unsigned "user" field.
      *
      * @inheritDoc
      */
@@ -183,10 +189,10 @@ class Apple extends AbstractProvider
     {
         return new AppleResourceOwner(
             array_merge(
-                ['sub' => $token->getResourceOwnerId()],
                 $response,
                 [
-                    'email' => $token->getValues()['email'] ?? ($response['email'] ?? null),
+                    'sub' => $token->getResourceOwnerId(),
+                    'email' => $token->getValues()['email'] ?? null,
                     'isPrivateEmail' => $token instanceof AppleAccessToken ? $token->isPrivateEmail() : null
                 ]
             ),
