@@ -17,6 +17,14 @@ If you request email address or name please note that you'll get this only in yo
 When you log in a second time you will only get the user id - nothing more.
 Maybe Apple changes this sometime.
 
+The name is taken from the `user` field Apple posts on the first login. This field is not signed,
+so use it for display only. User id and email always come from the signed ID token
+(`$user->getId()`, `$user->getEmail()`), never from the `user` field.
+
+If you create an `AppleAccessToken` yourself (e.g. from an ID token of your iOS app),
+pass your client ID as third argument so the `aud` claim is checked:
+`new AppleAccessToken($keys, $options, 'com.example.app')`.
+
 ## Installation
 
 To install, use composer:

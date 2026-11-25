@@ -384,4 +384,36 @@ class AppleTest extends TestCase
         $this->assertNull($data->getLastName());
         $this->assertNull($data->getFirstName());
     }
+
+    /**
+     * The "user" field is not signed, so its email must never end up as the resource owner email.
+     */
+    public function testEmailFromUserFieldIsIgnored()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('createResourceOwner');
+        $method->setAccessible(true);
+
+        /** @var AppleResourceOwner $data */
+        $data = $method->invokeArgs($provider, [
+            [
+                'sub' => 'victim.sub',
+                'email' => 'victim@example.com',
+                'name' => [
+                    'firstName' => 'John',
+                    'lastName' => 'Doe'
+                ]
+            ],
+            new AccessToken([
+                'access_token' => 'hello',
+                'resource_owner_id' => '123.4.567'
+            ])
+        ]);
+
+        $this->assertNull($data->getEmail());
+        $this->assertEquals('123.4.567', $data->getId());
+        $this->assertEquals('123.4.567', $data->toArray()['sub']);
+        $this->assertEquals('John', $data->getFirstName());
+    }
 }

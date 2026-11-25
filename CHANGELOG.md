@@ -1,23 +1,29 @@
 # Changelog
 All Notable changes to `oauth2-apple` will be documented in this file
 
-## 0.6.0 - 202X-XX-XX
+## 0.6.0 - 2026-11-23
 
 
 ### Added
-- Nothing
+- `AppleAccessToken` accepts the client ID as optional third argument
 
 ### Deprecated
-- Nothing
+- Creating an `AppleAccessToken` without a client ID (skips the `aud` check, will be required in 1.0)
 
 ### Fixed
-- Nothing
+- `email_verified` and `is_private_email` sent as strings (`"false"`) are now read correctly
 
 ### Removed
 - Nothing
 
 ### Security
-- Nothing
+- The ID token is now checked for `iss` (`https://appleid.apple.com`) and `aud` (your client ID).
+  Before, a correctly signed Apple ID token issued for another app was accepted.
+  Reported by Rathnadeepan (HotWater, [@HotWater-015](https://github.com/HotWater-015)).
+- The resource owner email now comes only from the signed ID token. Before, the unsigned
+  `user` field from the request was used as fallback when the ID token had no email,
+  which could lead to account takeover in apps that link accounts by email.
+  Reported by Rathnadeepan (HotWater, [@HotWater-015](https://github.com/HotWater-015)).
 
 ## 0.5.0 - 202X-XX-XX
 
