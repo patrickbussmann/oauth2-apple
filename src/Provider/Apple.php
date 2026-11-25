@@ -78,7 +78,7 @@ class Apple extends AbstractProvider
      */
     protected function createAccessToken(array $response, AbstractGrant $grant)
     {
-        return new AppleAccessToken($this->getAppleKeys(), $response);
+        return new AppleAccessToken($this->getAppleKeys(), $response, $this->clientId);
     }
 
     /**
@@ -122,14 +122,20 @@ class Apple extends AbstractProvider
     }
 
     /**
+     * Returns the "user" field Apple posts on the first login (name, email).
+     * This field is NOT signed. Use it for display only, never for identity.
+     *
      * @param AccessToken $token
      *
-     * @return mixed
+     * @return array
      */
     protected function fetchResourceOwnerDetails(AccessToken $token)
     {
-        return json_decode(array_key_exists('user', $_GET) ? $_GET['user']
-            : (array_key_exists('user', $_POST) ? $_POST['user'] : '[]'), true) ?: [];
+        $user = array_key_exists('user', $_GET) ? $_GET['user']
+            : (array_key_exists('user', $_POST) ? $_POST['user'] : null);
+        $details = is_string($user) ? json_decode($user, true) : null;
+
+        return is_array($details) ? $details : [];
     }
 
     /**
@@ -216,6 +222,7 @@ class Apple extends AbstractProvider
 
     /**
      * Generate a user object from a successful user details request.
+     * Identity (sub, email) comes only from the signed ID token, never from the unsigned "user" field.
      *
      * @param array $response
      * @param AccessToken $token
@@ -225,11 +232,10 @@ class Apple extends AbstractProvider
     {
         return new AppleResourceOwner(
             array_merge(
-                ['sub' => $token->getResourceOwnerId()],
                 $response,
                 [
-                    'email' => isset($token->getValues()['email'])
-                        ? $token->getValues()['email'] : (isset($response['email']) ? $response['email'] : null),
+                    'sub' => $token->getResourceOwnerId(),
+                    'email' => isset($token->getValues()['email']) ? $token->getValues()['email'] : null,
                     'isPrivateEmail' => $token instanceof AppleAccessToken ? $token->isPrivateEmail() : null
                 ]
             ),

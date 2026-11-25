@@ -170,6 +170,65 @@ class AppleTest extends TestCase
         ]);
     }
 
+    /**
+     * The provider must pass its client ID on, so an ID token issued for another app is rejected.
+     */
+    public function testGetAccessTokenRejectsIdTokenForOtherClient()
+    {
+        $this->expectException('UnexpectedValueException');
+        $this->expectExceptionMessage('Invalid "aud" claim within "id_token"');
+
+        $provider = new TestApple([
+            'clientId' => 'mock.example',
+            'teamId' => 'mock.team.id',
+            'keyFileId' => 'mock.file.id',
+            'keyFilePath' => __DIR__ . '/../../resources/p256-private-key.p8',
+            'redirectUri' => 'none'
+        ]);
+
+        $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_RSA, 'private_key_bits' => 2048]);
+        openssl_pkey_export($key, $pem);
+        $rsa = openssl_pkey_get_details($key)['rsa'];
+        $base64Url = function ($raw) {
+            return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+        };
+        $keySet = ['keys' => [[
+            'kty' => 'RSA',
+            'kid' => 'test',
+            'use' => 'sig',
+            'alg' => 'RS256',
+            'n' => $base64Url($rsa['n']),
+            'e' => $base64Url($rsa['e']),
+        ]]];
+
+        $idToken = \Firebase\JWT\JWT::encode([
+            'iss' => 'https://appleid.apple.com',
+            'aud' => 'another.apple.client',
+            'sub' => '123.abc.123',
+            'iat' => time(),
+            'exp' => time() + 600,
+        ], $pem, 'RS256', 'test');
+
+        $client = m::mock(ClientInterface::class);
+        $client->shouldReceive('request')
+            ->times(1)
+            ->andReturn(new Response(200, [], json_encode($keySet)));
+        $client->shouldReceive('send')
+            ->times(1)
+            ->andReturn(new Response(200, [], json_encode([
+                'access_token' => 'access_token',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+                'refresh_token' => 'abc.0.def',
+                'id_token' => $idToken
+            ])));
+        $provider->setHttpClient($client);
+
+        $provider->getAccessToken('authorization_code', [
+            'code' => 'hello-world'
+        ]);
+    }
+
     public function testGetAccessTokenFailedBecauseAppleHasError()
     {
         $this->expectException('Exception');
@@ -384,6 +443,56 @@ class AppleTest extends TestCase
         $this->assertEquals('john@doe.de', $data->getEmail());
         $this->assertNull($data->getLastName());
         $this->assertNull($data->getFirstName());
+    }
+
+    /**
+     * The "user" field is not signed, so its email and sub must never end up as the resource owner identity.
+     */
+    public function testIdentityFromUserFieldIsIgnored()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('createResourceOwner');
+        $method->setAccessible(true);
+
+        /** @var AppleResourceOwner $data */
+        $data = $method->invokeArgs($provider, [
+            [
+                'sub' => 'victim.sub',
+                'email' => 'victim@example.com',
+                'name' => [
+                    'firstName' => 'John',
+                    'lastName' => 'Doe'
+                ]
+            ],
+            new AccessToken([
+                'access_token' => 'hello',
+                'resource_owner_id' => '123.4.567'
+            ])
+        ]);
+
+        $this->assertNull($data->getEmail());
+        $this->assertEquals('123.4.567', $data->getId());
+        $this->assertEquals('123.4.567', $data->toArray()['sub']);
+        $this->assertEquals('John', $data->getFirstName());
+    }
+
+    /**
+     * The "user" field is user input, so anything but a JSON object must be ignored.
+     */
+    public function testFetchingOwnerDetailsIgnoresMalformedUserField()
+    {
+        $provider = $this->getProvider();
+        $class = new \ReflectionClass($provider);
+        $method = $class->getMethod('fetchResourceOwnerDetails');
+        $method->setAccessible(true);
+        $token = new AccessToken(['access_token' => 'hello']);
+
+        foreach (['5', '"abc"', 'true', ['name' => 'John']] as $user) {
+            $_POST['user'] = $user;
+            $this->assertSame([], $method->invokeArgs($provider, [$token]));
+        }
+        unset($_POST['user']);
     }
 
     public function testGetConfiguration()
